@@ -35,12 +35,12 @@ export function rehypeExecutableCode() {
       if (
         node.tagName === 'code' &&
         node.properties?.className?.includes('language-python') &&
-        node.properties.executable
+        (node.properties as any).executable
       ) {
         // Transform to executable code block
         const code = node.children[0]?.value || '';
-        const hints = node.properties.hints ? 
-          node.properties.hints.split(',').map((h: string) => h.trim()) : 
+        const hints = (node.properties as any).hints ? 
+          (node.properties as any).hints.split(',').map((h: string) => h.trim()) : 
           [];
         
         const executableNode: Element = {
@@ -50,13 +50,13 @@ export function rehypeExecutableCode() {
             className: ['executable-code-wrapper'],
             'data-code': code,
             'data-hints': JSON.stringify(hints),
-            'data-description': node.properties.description || '',
+            'data-description': (node.properties as any).description || '',
           },
           children: []
         };
 
         // Replace the code block
-        if (parent && typeof index === 'number') {
+        if (parent && parent.children && typeof index === 'number') {
           parent.children[index] = executableNode;
         }
       }
