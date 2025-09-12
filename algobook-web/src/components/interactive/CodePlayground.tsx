@@ -69,7 +69,8 @@ export default function CodePlayground({
 
   // Apply settings-based hints visibility
   useEffect(() => {
-    setShowHints(settings?.showHints && Array.isArray(hints) && hints.length > 0);
+    // Only show hints if settings allow it AND user has manually enabled them, not by default
+    setShowHints(false);
   }, [settings?.showHints, hints]);
 
   const runCode = async () => {
