@@ -74,6 +74,8 @@ builtins.input = js_input
       // Set up the input handler using a different approach
       // We'll use a shared state approach instead of busy waiting
       // Variables for input handling (may be used in future implementations)
+      let inputReady = false;
+      let currentInput = "";
       
       this.pyodide.globals.set("js_get_input", (prompt: string) => {
         this.waitingForInput = true;

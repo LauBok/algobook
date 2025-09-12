@@ -422,7 +422,7 @@ result = _execute_with_input_responses(_multi_line_block, [])
 result if isinstance(result, str) else ""
       `);
       firstPrompt = promptResult === 'True' ? '' : (promptResult || '');
-    } catch {
+    } catch (e) {
       console.log('Could not determine first prompt:', e);
       firstPrompt = '';
     }
