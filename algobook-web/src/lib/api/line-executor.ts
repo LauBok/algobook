@@ -42,7 +42,7 @@ class LineExecutorService {
 
       this.pyodide = await (window as any).loadPyodide({
         indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/',
-        stdin: (prompt) => {
+        stdin: (prompt: any) => {
           console.log('🎤 STDIN called with prompt:', JSON.stringify(prompt));
           console.log('📍 Current input index:', (this as any)._jsInputIndex);
           console.log('🎯 Available inputs:', (this as any)._jsInputQueue);
@@ -74,13 +74,13 @@ class LineExecutorService {
             throw new Error('EOF');
           }
         },
-        stdout: (text) => {
+        stdout: (text: any) => {
           // Send Python output directly to terminal - no hardcoded detection
           if (this.terminalOutputCallback) {
             this.terminalOutputCallback({ type: 'output', content: text });
           }
         },
-        stderr: (text) => {
+        stderr: (text: any) => {
           // Send Python errors directly to terminal  
           if (this.terminalOutputCallback) {
             this.terminalOutputCallback({ type: 'output', content: text });

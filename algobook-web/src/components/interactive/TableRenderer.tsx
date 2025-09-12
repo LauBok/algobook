@@ -55,7 +55,7 @@ export default function TableRenderer({ table }: TableRendererProps) {
 
   // Helper function to render inline formatting (code and bold)
   const renderInlineFormatting = (text: string) => {
-    const parts: (string | JSX.Element)[] = [];
+    const parts: (string | React.ReactElement)[] = [];
     let lastIndex = 0;
     let keyCounter = 0;
     

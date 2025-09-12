@@ -165,7 +165,7 @@ export default function WindowWidget({
         {React.cloneElement(children as React.ReactElement, {
           ...currentStepData,
           algorithmState: state
-        })}
+        } as any)}
       </div>
 
       {/* Current Step Description */}

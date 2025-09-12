@@ -20,7 +20,7 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
       if (!plotRef.current) return;
 
       // Convert our plot data to Plotly format
-      const traces = plot.data.map((series) => ({
+      const traces: any[] = plot.data.map((series) => ({
         x: series.x,
         y: series.y,
         name: series.name,
@@ -29,7 +29,7 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
         marker: series.marker || getDefaultMarker(plot.type),
       }));
 
-      const layout = {
+      const layout: any = {
         title: plot.title || '',
         xaxis: {
           title: plot.options?.xLabel || 'X'
@@ -74,7 +74,7 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
         }
       };
 
-      const config = {
+      const config: any = {
         displayModeBar: plot.options?.interactive !== false,
         responsive: true,
         displaylogo: false,

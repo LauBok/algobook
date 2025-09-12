@@ -26,8 +26,8 @@ export class Judge0Service {
 
     // Add RapidAPI headers if using RapidAPI
     if (process.env.NEXT_PUBLIC_JUDGE0_RAPIDAPI_KEY) {
-      headers['X-RapidAPI-Key'] = process.env.NEXT_PUBLIC_JUDGE0_RAPIDAPI_KEY;
-      headers['X-RapidAPI-Host'] = 'judge0-ce.p.rapidapi.com';
+      (headers as any)['X-RapidAPI-Key'] = process.env.NEXT_PUBLIC_JUDGE0_RAPIDAPI_KEY;
+      (headers as any)['X-RapidAPI-Host'] = 'judge0-ce.p.rapidapi.com';
     }
 
     return fetch(url, {
@@ -285,6 +285,7 @@ builtins.input = _input_backup
 `);
 
       return {
+        token: 'pyodide-execution',
         stdout: stdout || '',
         stderr: stderr || '',
         compile_output: '',
@@ -312,6 +313,7 @@ builtins.input = _input_backup
       const cleanedError = this.extractLineNumberFromError(errorMessage);
 
       return {
+        token: 'pyodide-error',
         stdout: '',
         stderr: cleanedError,
         compile_output: '',

@@ -77,7 +77,7 @@ def make_move(remaining_stones):
   });
 
   const [animationSpeed, setAnimationSpeed] = useState(1000);
-  const gameTimerRef = useRef<NodeJS.Timeout>();
+  const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Save algorithm code to localStorage whenever it changes
   useEffect(() => {
@@ -384,7 +384,7 @@ def make_move(remaining_stones):
       setChallengeState(prev => ({ 
         ...prev, 
         isRunning: false,
-        testResults: [...prev.testResults, { game: prev.currentGame, won: false, reason: `Error: ${error.message}` }]
+        testResults: [...prev.testResults, { game: prev.currentGame, won: false, reason: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }]
       }));
     }
   };
@@ -425,7 +425,7 @@ print(result)
         throw new Error(response.stderr || 'Execution failed');
       }
       
-      const output = response.stdout.trim();
+      const output = (response.stdout || '').trim();
       const lastLine = output.split('\n').pop() || '';
       
       // Parse result - handle different return types
@@ -435,7 +435,7 @@ print(result)
       return lastLine;
       
     } catch (error) {
-      throw new Error(`Function ${functionName} failed: ${error.message}`);
+      throw new Error(`Function ${functionName} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -508,7 +508,7 @@ print(result)
             return { won: false, reason: `Invalid move: ${move}` };
           }
         } catch (error) {
-          return { won: false, reason: `Algorithm error: ${error.message}` };
+          return { won: false, reason: `Algorithm error: ${error instanceof Error ? error.message : 'Unknown error'}` };
         }
       } else {
         move = calculateOptimalMove(stones, gameState.allowedMoves);
@@ -585,7 +585,7 @@ print(result)
             return { won: false, reason: `Invalid move: ${move}. Must be from [${allowedMoves.join(', ')}] and <= ${stones}`, moveHistory };
           }
         } catch (error) {
-          return { won: false, reason: `Algorithm error: ${error.message}`, moveHistory };
+          return { won: false, reason: `Algorithm error: ${error instanceof Error ? error.message : 'Unknown error'}`, moveHistory };
         }
       } else {
         // AI plays optimally
@@ -1072,16 +1072,16 @@ print(result)
                             {result.reason && ` - ${result.reason}`}
                           </div>
                           
-                          {result.initialStones && (
+                          {(result as any).initialStones && (
                             <div className="text-xs text-gray-600 mt-1">
-                              Setup: {result.initialStones} stones, moves [{result.allowedMoves?.join(', ')}], 
-                              {result.humanFirst ? ' you went first' : ' AI went first'}
+                              Setup: {(result as any).initialStones} stones, moves [{(result as any).allowedMoves?.join(', ')}], 
+                              {(result as any).humanFirst ? ' you went first' : ' AI went first'}
                             </div>
                           )}
                           
-                          {result.moveHistory && result.moveHistory.length > 0 && (
+                          {(result as any).moveHistory && (result as any).moveHistory.length > 0 && (
                             <div className="text-xs text-gray-600 mt-1">
-                              Moves: {result.moveHistory.map((move: any, i: number) => 
+                              Moves: {(result as any).moveHistory.map((move: any, i: number) => 
                                 `${move.player === 'algorithm' ? 'You' : 'AI'} took ${move.move} (${move.stonesLeft} left)`
                               ).join(' → ')}
                             </div>
