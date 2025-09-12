@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd algobook-web && npm run build",
+  "outputDirectory": "algobook-web/.next",
+  "installCommand": "cd algobook-web && npm install",
+  "devCommand": "cd algobook-web && npm run dev",
+  "framework": "nextjs"
+}
