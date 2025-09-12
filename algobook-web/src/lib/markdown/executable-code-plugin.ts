@@ -20,9 +20,9 @@ export function remarkExecutableCode() {
         // Add metadata to mark this as executable
         node.data = node.data || {};
         node.data.hProperties = node.data.hProperties || {};
-        node.data.hProperties.executable = true;
-        node.data.hProperties.hints = node.meta?.match(/hints="([^"]*)"/)?.[1];
-        node.data.hProperties.description = node.meta?.match(/description="([^"]*)"/)?.[1];
+        (node.data.hProperties as any).executable = true;
+        (node.data.hProperties as any).hints = node.meta?.match(/hints="([^"]*)"/)?.[1];
+        (node.data.hProperties as any).description = node.meta?.match(/description="([^"]*)"/)?.[1];
       }
     });
   };

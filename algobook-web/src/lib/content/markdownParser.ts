@@ -478,7 +478,7 @@ function parseExerciseData(data: RawExerciseData): Exercise | null {
     id: data.id,
     title: data.title,
     description: data.description,
-    difficulty: data.difficulty || 'easy',
+    difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
     starterCode: data.starterCode,
     testCases,
     hints: data.hints || [],

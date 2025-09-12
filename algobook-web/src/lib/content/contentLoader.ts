@@ -66,12 +66,11 @@ function createSectionFromMarkdown(
     interactiveElements: (fallbackData?.interactiveElements as any) || [],
     exercises: parsed.exercises.length > 0 ? parsed.exercises : ((fallbackData?.exercises as any) || []),
     quiz: parsed.quizzes.length > 0 ? parsed.quizzes[0] : (fallbackData?.quiz as any) || undefined,
-    quizzes: parsed.quizzes.length > 0 ? parsed.quizzes : [],
     callouts: parsed.callouts || [],
     plots: parsed.plots || [],
     tables: parsed.tables || [],
     algorithmWidgets: parsed.algorithmWidgets || []
-  };
+  } as any;
 }
 
 function createSectionsFromMetadata(chapterMetadata: ChapterMetadata): Record<string, Section> {
