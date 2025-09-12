@@ -69,8 +69,8 @@ export default function CodePlayground({
 
   // Apply settings-based hints visibility
   useEffect(() => {
-    setShowHints(settings?.showHints && hints.length > 0);
-  }, [settings?.showHints, hints.length]);
+    setShowHints(settings?.showHints && Array.isArray(hints) && hints.length > 0);
+  }, [settings?.showHints, hints]);
 
   const runCode = async () => {
     if (isRunning) return;
@@ -421,7 +421,7 @@ export default function CodePlayground({
               >
                 {terminalMode ? '🖥️ Terminal' : '📄 Batch'}
               </button>
-              {hints.length > 0 && settings?.showHints && (
+              {Array.isArray(hints) && hints.length > 0 && settings?.showHints && (
                 <button
                   onClick={() => setShowHints(!showHints)}
                   className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors"
@@ -612,15 +612,15 @@ export default function CodePlayground({
       </div>
 
       {/* Hints Panel */}
-      {showHints && hints.length > 0 && (
+      {showHints && Array.isArray(hints) && hints.length > 0 && (
         <div className="px-4 py-3 bg-yellow-50 border-t border-gray-200">
           <h4 className="text-sm font-medium text-yellow-800 mb-2">💡 Hints:</h4>
           <ul className="space-y-1">
-            {hints.map((hint, index) => (
+            {Array.isArray(hints) ? hints.map((hint, index) => (
               <li key={index} className="text-sm text-yellow-700">
-                {index + 1}. {hint}
+                {index + 1}. {typeof hint === 'string' ? hint : JSON.stringify(hint)}
               </li>
-            ))}
+            )) : null}
           </ul>
         </div>
       )}

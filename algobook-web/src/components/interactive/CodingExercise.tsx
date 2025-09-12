@@ -391,7 +391,7 @@ export default function CodingExercise({
             initialCode={showSolution && solution ? solution : code}
             editable={!showSolution}
             showOutput={true}
-            hints={hints}
+            hints={Array.isArray(hints) ? hints : []}
             prepend={prepend}
             postpend={postpend}
             onCodeChange={(newCode) => !showSolution && setCode(newCode)}
@@ -517,7 +517,7 @@ export default function CodingExercise({
           <ul className="space-y-1">
             {hints.map((hint, index) => (
               <li key={index} className="text-sm text-yellow-700">
-                {index + 1}. {hint}
+                {index + 1}. {typeof hint === 'string' ? hint : JSON.stringify(hint)}
               </li>
             ))}
           </ul>
