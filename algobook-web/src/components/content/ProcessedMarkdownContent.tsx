@@ -1,0 +1,638 @@
+'use client';
+
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer } from '@/components/interactive';
+import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
+import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
+import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget } from '@/lib/types/content';
+import 'katex/dist/katex.min.css';
+
+interface ProcessedMarkdownContentProps {
+  content: string;
+  quizzes?: Quiz[];
+  exercises?: Exercise[];
+  callouts?: CalloutBlock[];
+  plots?: PlotBlock[];
+  tables?: TableBlock[];
+  algorithmWidgets?: AlgorithmWidget[];
+}
+
+interface CodeBlockInfo {
+  code: string;
+  id: string;
+}
+
+interface CallStackVisualizerInfo {
+  id: string;
+  title?: string;
+  description?: string;
+  functionName?: string;
+  maxValue?: number;
+  showCountdown?: boolean;
+  showFactorial?: boolean;
+  showFibonacci?: boolean;
+}
+
+interface BinarySearchVisualizerInfo {
+  id: string;
+  title?: string;
+  description?: string;
+  initialArray?: number[];
+}
+
+interface MergeVisualizerInfo {
+  id: string;
+  title?: string;
+  description?: string;
+  initialLeft?: number[];
+  initialRight?: number[];
+}
+
+
+export default function ProcessedMarkdownContent({ content, quizzes = [], exercises = [], callouts = [], plots = [], tables = [], algorithmWidgets = [] }: ProcessedMarkdownContentProps) {
+  const codeBlocks: CodeBlockInfo[] = [];
+  const callStackVisualizers: CallStackVisualizerInfo[] = [];
+  const binarySearchVisualizers: BinarySearchVisualizerInfo[] = [];
+  const mergeVisualizers: MergeVisualizerInfo[] = [];
+  const calloutBlocks: CalloutBlock[] = callouts;
+  const plotBlocks: PlotBlock[] = plots;
+  const tableBlocks: TableBlock[] = tables;
+  const algorithmWidgetBlocks: AlgorithmWidget[] = algorithmWidgets;
+  
+  // First pass: extract executable code blocks and callstack visualizers, replace with placeholders
+  const processedContent = content
+    .replace(
+      /```python-execute\n([\s\S]*?)\n```/g,
+      (match, code) => {
+        const id = `executable-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        codeBlocks.push({ code: code.trim(), id });
+        return `<EXECUTABLE_CODE_PLACEHOLDER_${id}/>`;
+      }
+    )
+    .replace(
+      /```callstack-visualizer\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        const config: Record<string, string> = {};
+        const lines = configBlock.trim().split('\n');
+        
+        for (const line of lines) {
+          const [key, ...valueParts] = line.split(':');
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join(':').trim();
+            config[key.trim()] = value;
+          }
+        }
+        
+        const visualizerInfo: CallStackVisualizerInfo = {
+          id: config.id || `callstack-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          title: config.title,
+          description: config.description,
+          functionName: config.functionName,
+          maxValue: config.maxValue ? parseInt(config.maxValue) : undefined,
+          showCountdown: config.showCountdown !== 'false',
+          showFactorial: config.showFactorial !== 'false', 
+          showFibonacci: config.showFibonacci === 'true'
+        };
+        
+        callStackVisualizers.push(visualizerInfo);
+        return `<CALLSTACK_VISUALIZER_PLACEHOLDER_${visualizerInfo.id}/>`;
+      }
+    )
+    .replace(
+      /```binary-search-visualizer\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        const config: Record<string, string> = {};
+        const lines = configBlock.trim().split('\n');
+        
+        for (const line of lines) {
+          const [key, ...valueParts] = line.split(':');
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join(':').trim();
+            config[key.trim()] = value;
+          }
+        }
+        
+        const visualizerInfo: BinarySearchVisualizerInfo = {
+          id: config.id || `binary-search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          title: config.title,
+          description: config.description,
+          initialArray: config.initialArray ? config.initialArray.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)) : undefined
+        };
+        
+        binarySearchVisualizers.push(visualizerInfo);
+        return `<BINARY_SEARCH_VISUALIZER_PLACEHOLDER_${visualizerInfo.id}/>`;
+      }
+    )
+    .replace(
+      /```merge-visualizer\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        const config: Record<string, string> = {};
+        const lines = configBlock.trim().split('\n');
+        
+        for (const line of lines) {
+          const [key, ...valueParts] = line.split(':');
+          if (key && valueParts.length > 0) {
+            const value = valueParts.join(':').trim();
+            config[key.trim()] = value;
+          }
+        }
+        
+        const visualizerInfo: MergeVisualizerInfo = {
+          id: config.id || `merge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          title: config.title,
+          description: config.description,
+          initialLeft: config.initialLeft ? config.initialLeft.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)) : undefined,
+          initialRight: config.initialRight ? config.initialRight.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n)) : undefined
+        };
+        
+        mergeVisualizers.push(visualizerInfo);
+        return `<MERGE_VISUALIZER_PLACEHOLDER_${visualizerInfo.id}/>`;
+      }
+    );
+
+
+  // Process placeholders in the content
+  
+  // Find all placeholders and their positions
+  const placeholders: Array<{ type: 'code' | 'quiz' | 'exercise' | 'callout' | 'plot' | 'table' | 'algorithm-widget' | 'callstack-visualizer' | 'binary-search-visualizer' | 'merge-visualizer', id: string, position: number, match: string }> = [];
+  
+  // Find code placeholders
+  let match;
+  const codeGlobalRegex = /<EXECUTABLE_CODE_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = codeGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'code',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find quiz placeholders
+  const quizGlobalRegex = /<QUIZ_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = quizGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'quiz',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find exercise placeholders
+  const exerciseGlobalRegex = /<EXERCISE_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = exerciseGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'exercise',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find callout placeholders
+  const calloutGlobalRegex = /<CALLOUT_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = calloutGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'callout',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find plot placeholders
+  const plotGlobalRegex = /<PLOT_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = plotGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'plot',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find table placeholders
+  const tableGlobalRegex = /<TABLE_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = tableGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'table',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find algorithm widget placeholders
+  const algorithmWidgetGlobalRegex = /<ALGORITHM_WIDGET_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = algorithmWidgetGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'algorithm-widget',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find callstack visualizer placeholders
+  const callStackVisualizerGlobalRegex = /<CALLSTACK_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = callStackVisualizerGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'callstack-visualizer',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find binary search visualizer placeholders
+  const binarySearchVisualizerGlobalRegex = /<BINARY_SEARCH_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = binarySearchVisualizerGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'binary-search-visualizer',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Find merge visualizer placeholders
+  const mergeVisualizerGlobalRegex = /<MERGE_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = mergeVisualizerGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'merge-visualizer',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
+  // Sort placeholders by position
+  placeholders.sort((a, b) => a.position - b.position);
+  
+  // Split content by all placeholders
+  let parts: string[] = [];
+  let lastIndex = 0;
+  
+  for (const placeholder of placeholders) {
+    // Add text before placeholder
+    if (placeholder.position > lastIndex) {
+      parts.push(processedContent.slice(lastIndex, placeholder.position));
+    }
+    // Add placeholder marker
+    parts.push(placeholder.match);
+    lastIndex = placeholder.position + placeholder.match.length;
+  }
+  
+  // Add remaining content
+  if (lastIndex < processedContent.length) {
+    parts.push(processedContent.slice(lastIndex));
+  }
+  
+  // Filter out empty parts
+  parts = parts.filter(part => part.trim() !== '');
+  
+  // Generate hints based on code content
+  const generateHints = (code: string): string[] => {
+    const hints: string[] = [];
+    if (code.includes('print(') && code.includes('=')) {
+      hints.push('Try changing the variable values to see how the output changes');
+    }
+    if (code.includes('f"') || code.includes("f'")) {
+      hints.push('Experiment with f-string formatting by modifying the variables');
+    }
+    if (code.includes('.upper()') || code.includes('.lower()')) {
+      hints.push('Try different string methods like .title() or .capitalize()');
+    }
+    if (code.match(/[+\-*/%]/)) {
+      hints.push('Modify the numbers to see different calculation results');
+    }
+    return hints.slice(0, 3);
+  };
+
+
+  return (
+    <div className="space-y-0">
+      {parts.map((part, index) => {
+        // Check if this part is a placeholder
+        const codeMatch = part.match(/<EXECUTABLE_CODE_PLACEHOLDER_([^/>]+)\/>/);
+        const quizMatch = part.match(/<QUIZ_PLACEHOLDER_([^/>]+)\/>/);
+        const exerciseMatch = part.match(/<EXERCISE_PLACEHOLDER_([^/>]+)\/>/);
+        const calloutMatch = part.match(/<CALLOUT_PLACEHOLDER_([^/>]+)\/>/);
+        const plotMatch = part.match(/<PLOT_PLACEHOLDER_([^/>]+)\/>/);
+        const tableMatch = part.match(/<TABLE_PLACEHOLDER_([^/>]+)\/>/);
+        const algorithmWidgetMatch = part.match(/<ALGORITHM_WIDGET_PLACEHOLDER_([^/>]+)\/>/);
+        const callStackVisualizerMatch = part.match(/<CALLSTACK_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
+        const binarySearchVisualizerMatch = part.match(/<BINARY_SEARCH_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
+        const mergeVisualizerMatch = part.match(/<MERGE_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
+        
+        // Determine the widget component to render
+        const getAlgorithmWidgetComponent = (algorithm: string, props: Record<string, unknown>) => {
+          switch (algorithm) {
+            case 'bubble-sort':
+              return <BubbleSortWidget {...props} />;
+            case 'insertion-sort':
+              return <InsertionSortWidget {...props} />;
+            default:
+              console.warn(`Unknown algorithm widget: ${algorithm}`);
+              return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown algorithm: {algorithm}</div>;
+          }
+        };
+        
+        if (codeMatch) {
+          // Handle code playground
+          const codeId = codeMatch[1];
+          const codeBlock = codeBlocks.find(block => block.id === codeId);
+          if (codeBlock) {
+            return (
+              <div key={index} className="mb-8">
+                <CodePlayground
+                  initialCode={codeBlock.code}
+                  hints={generateHints(codeBlock.code)}
+                  editable={true}
+                  showOutput={true}
+                />
+              </div>
+            );
+          }
+          return null;
+        } else if (quizMatch) {
+          // Handle inline quiz
+          const quizId = quizMatch[1];
+          const quiz = quizzes.find(q => q.id === quizId);
+          if (quiz) {
+            return (
+              <div key={index} className="mb-8">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-4">💡 Quick Check</h4>
+                  {quiz.questions.map((question) => (
+                    <div key={question.id} className="mb-4">
+                      <MultipleChoice
+                        id={question.id}
+                        question={question.question}
+                        options={question.options}
+                        explanation={question.explanation}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        } else if (exerciseMatch) {
+          // Handle inline exercise
+          const exerciseId = exerciseMatch[1];
+          const exercise = exercises.find(e => e.id === exerciseId);
+          if (exercise) {
+            return (
+              <div key={index} className="mb-8">
+                <CodingExercise
+                  id={exercise.id}
+                  title={exercise.title}
+                  description={exercise.description}
+                  starterCode={exercise.starterCode}
+                  testCases={exercise.testCases}
+                  hints={exercise.hints}
+                  solution={exercise.solution}
+                  difficulty={exercise.difficulty}
+                  echoInput={exercise.echoInput}
+                  prepend={exercise.prepend}
+                  postpend={exercise.postpend}
+                />
+              </div>
+            );
+          }
+          return null;
+        } else if (calloutMatch) {
+          // Handle callout blocks
+          const calloutId = calloutMatch[1];
+          const callout = calloutBlocks.find(block => block.id === calloutId);
+          if (callout) {
+            const calloutStyles = {
+              note: {
+                bg: 'bg-blue-50',
+                border: 'border-blue-200',
+                title: 'text-blue-900',
+                icon: '💡'
+              },
+              hint: {
+                bg: 'bg-green-50',
+                border: 'border-green-200',
+                title: 'text-green-900',
+                icon: '🔍'
+              },
+              warning: {
+                bg: 'bg-yellow-50',
+                border: 'border-yellow-200',
+                title: 'text-yellow-900',
+                icon: '⚠️'
+              },
+              danger: {
+                bg: 'bg-red-50',
+                border: 'border-red-200',
+                title: 'text-red-900',
+                icon: '🚨'
+              }
+            };
+            
+            const style = calloutStyles[callout.type];
+            const title = callout.title || callout.type.charAt(0).toUpperCase() + callout.type.slice(1);
+            
+            return (
+              <div key={index} className="mb-8">
+                <div className={`${style.bg} ${style.border} border rounded-lg p-6`}>
+                  <h4 className={`text-lg font-semibold ${style.title} mb-4`}>
+                    {style.icon} {title}
+                  </h4>
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                      components={{
+                        code: (props: any) => {
+                          const { inline, className, children } = props;
+                          const match = /language-(\w+)/.exec(className || '');
+                          const language = match ? match[1] : 'python';
+                          const codeContent = String(children).replace(/\n$/, '');
+                          
+                          // If it's inline code, always render as inline
+                          if (inline) {
+                            return (
+                              <code className="bg-gray-100 px-1 py-0.5 rounded font-mono" {...props}>
+                                {children}
+                              </code>
+                            );
+                          }
+                          
+                          // For block code, check if it has a language class (from ```language)
+                          // If no language class, it's likely from single backticks that should be inline
+                          if (!className) {
+                            return (
+                              <code className="bg-gray-100 px-1 py-0.5 rounded font-mono" {...props}>
+                                {children}
+                              </code>
+                            );
+                          }
+                          
+                          // For proper block code with language, render as code blocks
+                          return (
+                            <CodeBlock language={language} showLineNumbers={true} showCopyButton={true}>
+                              {codeContent}
+                            </CodeBlock>
+                          );
+                        },
+                      }}
+                    >
+                      {callout.content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        } else if (plotMatch) {
+          // Handle plot blocks
+          const plotId = plotMatch[1];
+          const plot = plotBlocks.find(block => block.id === plotId);
+          if (plot) {
+            return <PlotRenderer key={index} plot={plot} />;
+          }
+          return null;
+        } else if (tableMatch) {
+          // Handle table blocks
+          const tableId = tableMatch[1];
+          const table = tableBlocks.find(block => block.id === tableId);
+          if (table) {
+            return <TableRenderer key={index} table={table} />;
+          }
+          return null;
+        } else if (algorithmWidgetMatch) {
+          // Handle algorithm widget blocks
+          const algorithmWidgetId = algorithmWidgetMatch[1];
+          const algorithmWidget = algorithmWidgetBlocks.find(block => block.id === algorithmWidgetId);
+          if (algorithmWidget) {
+            return (
+              <div key={index} className="mb-8">
+                {getAlgorithmWidgetComponent(algorithmWidget.algorithm, {
+                  initialData: algorithmWidget.initialData,
+                  title: algorithmWidget.title,
+                  options: algorithmWidget.options
+                })}
+              </div>
+            );
+          }
+          return null;
+        } else if (callStackVisualizerMatch) {
+          // Handle callstack visualizer blocks
+          const callStackVisualizerId = callStackVisualizerMatch[1];
+          const callStackVisualizer = callStackVisualizers.find(block => block.id === callStackVisualizerId);
+          if (callStackVisualizer) {
+            return (
+              <div key={index} className="mb-8">
+                <CallStackVisualizer
+                  id={callStackVisualizer.id}
+                  title={callStackVisualizer.title}
+                  description={callStackVisualizer.description}
+                  functionName={callStackVisualizer.functionName}
+                  maxValue={callStackVisualizer.maxValue}
+                  showCountdown={callStackVisualizer.showCountdown}
+                  showFactorial={callStackVisualizer.showFactorial}
+                  showFibonacci={callStackVisualizer.showFibonacci}
+                />
+              </div>
+            );
+          }
+          return null;
+        } else if (binarySearchVisualizerMatch) {
+          // Handle binary search visualizer
+          const binarySearchVisualizerId = binarySearchVisualizerMatch[1];
+          const binarySearchVisualizer = binarySearchVisualizers.find(block => block.id === binarySearchVisualizerId);
+          if (binarySearchVisualizer) {
+            return (
+              <div key={index} className="mb-8">
+                <BinarySearchVisualizer
+                  id={binarySearchVisualizer.id}
+                  title={binarySearchVisualizer.title}
+                  description={binarySearchVisualizer.description}
+                  initialArray={binarySearchVisualizer.initialArray}
+                />
+              </div>
+            );
+          }
+          return null;
+        } else if (mergeVisualizerMatch) {
+          // Handle merge visualizer
+          const mergeVisualizerId = mergeVisualizerMatch[1];
+          const mergeVisualizer = mergeVisualizers.find(block => block.id === mergeVisualizerId);
+          if (mergeVisualizer) {
+            return (
+              <div key={index} className="mb-8">
+                <MergeVisualizer
+                  id={mergeVisualizer.id}
+                  title={mergeVisualizer.title}
+                  description={mergeVisualizer.description}
+                  initialLeft={mergeVisualizer.initialLeft}
+                  initialRight={mergeVisualizer.initialRight}
+                />
+              </div>
+            );
+          }
+          return null;
+        } else {
+          // Handle regular markdown content
+          return part.trim() ? (
+            <div key={index} className="prose prose-lg prose-gray max-w-none mb-8">
+              <ReactMarkdown 
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                  code: (props: any) => {
+                    const { inline, className, children } = props;
+                    const match = /language-(\w+)/.exec(className || '');
+                    const language = match ? match[1] : 'python';
+                    const codeContent = String(children).replace(/\n$/, '');
+                    
+                    // If it's inline code, always render as inline
+                    if (inline) {
+                      return (
+                        <code className="bg-gray-100 px-1 py-0.5 rounded font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    }
+                    
+                    // For block code, check if it's short enough to be treated as inline
+                    const isShortCode = !codeContent.includes('\n') && codeContent.length < 50;
+                    
+                    if (isShortCode) {
+                      return (
+                        <code className="bg-gray-100 px-1 py-0.5 rounded font-mono" {...props}>
+                          {children}
+                        </code>
+                      );
+                    }
+                    
+                    // For longer code blocks, use the full CodeBlock component
+                    return (
+                      <CodeBlock language={language} showLineNumbers={true} showCopyButton={true}>
+                        {codeContent}
+                      </CodeBlock>
+                    );
+                  },
+                }}
+              >
+                {part}
+              </ReactMarkdown>
+            </div>
+          ) : null;
+        }
+      })}
+    </div>
+  );
+}

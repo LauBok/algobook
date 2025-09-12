@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+
+/* Plotly toolbar positioning */
+.js-plotly-plot .plotly .modebar {
+  top: 10px !important;
+  right: 10px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  padding: 4px !important;
+}
+
+.js-plotly-plot .plotly .modebar-btn {
+  background: transparent !important;
+  border-radius: 4px !important;
+}
+
+.js-plotly-plot .plotly .modebar-btn:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Ensure prose headings and content are properly styled */
+.prose {
+  color: #1f2937; /* Default text color */
+}
+
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: #111827 !important; /* text-gray-900 */
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.prose h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+
+.prose h2 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.prose h3 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.prose p {
+  color: #1f2937 !important; /* text-gray-800 */
+  margin-bottom: 1rem;
+}
+
+.prose ul, .prose ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  color: #1f2937 !important; /* text-gray-800 */
+  margin-bottom: 0.5rem;
+}
+
+.prose ul li {
+  list-style-type: disc;
+}
+
+.prose ol li {
+  list-style-type: decimal;
+}
+
+.prose strong {
+  color: #111827 !important; /* text-gray-900 */
+  font-weight: 700;
+}
+
+.prose code {
+  color: #1f2937 !important; /* text-gray-800 */
+  background-color: #f3f4f6; /* gray-100 */
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 14px; /* Match Monaco Editor font size */
+  font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace !important; /* Monaco Editor font stack */
+  font-feature-settings: 'liga' 0, 'calt' 0 !important; /* Disable ligatures */
+  font-variant-ligatures: none !important;
+  font-weight: normal !important; /* Monaco Editor uses normal weight */
+}
+
+/* Ensure inline code in headers maintains appropriate font size */
+.prose h1 code {
+  font-size: 1.8rem !important; /* 80% of h1 font-size (2.25rem) */
+}
+
+.prose h2 code {
+  font-size: 1.5rem !important; /* 80% of h2 font-size (1.875rem) */
+}
+
+.prose h3 code {
+  font-size: 1.2rem !important; /* 80% of h3 font-size (1.5rem) */
+}
+
+.prose h4 code {
+  font-size: 1rem !important; /* 80% of h4 font-size (1.25rem) */
+}
+
+.prose h5 code {
+  font-size: 0.9rem !important; /* 80% of h5 font-size (1.125rem) */
+}
+
+.prose h6 code {
+  font-size: 0.8rem !important; /* 80% of h6 font-size (1rem) */
+}
