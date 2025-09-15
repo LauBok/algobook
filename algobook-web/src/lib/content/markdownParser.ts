@@ -1,4 +1,4 @@
-import { Quiz, Exercise, QuizQuestion, QuizOption, TestCase, PlotBlock, PlotData, PlotOptions, TableBlock, AlgorithmWidget } from '@/lib/types/content';
+import { Quiz, Exercise, QuizQuestion, QuizOption, TestCase, PlotBlock, PlotData, PlotOptions, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
 import * as yaml from 'js-yaml';
 
 interface RawQuizData {
@@ -77,6 +77,14 @@ interface RawAlgorithmWidgetData {
   };
 }
 
+interface RawWidgetData {
+  id: string;
+  type: string;
+  title?: string;
+  description?: string;
+  props?: Record<string, any>;
+}
+
 export interface ParsedMarkdownContent {
   content: string; // Cleaned markdown without quiz/exercise blocks
   title?: string; // Extracted from first # heading
@@ -86,6 +94,7 @@ export interface ParsedMarkdownContent {
   plots: PlotBlock[];
   tables: TableBlock[];
   algorithmWidgets: AlgorithmWidget[];
+  widgets: WidgetBlock[];
 }
 
 /**
@@ -230,6 +239,7 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
   const plots: PlotBlock[] = [];
   const tables: TableBlock[] = [];
   const algorithmWidgets: AlgorithmWidget[] = [];
+  const widgets: WidgetBlock[] = [];
   
   // Extract title from first # heading and remove it from content
   const { title, cleanContent: contentWithoutTitle } = extractTitleAndClean(content);
@@ -238,7 +248,7 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
   // Extract quiz blocks and replace with placeholders
   const quizRegex = /```quiz\n([\s\S]*?)\n```/g;
   let quizMatch;
-  while ((quizMatch = quizRegex.exec(content)) !== null) {
+  while ((quizMatch = quizRegex.exec(cleanContent)) !== null) {
     try {
       const quizData = yaml.load(quizMatch[1]) as RawQuizData;
       const quiz = parseQuizData(quizData);
@@ -247,18 +257,22 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
         // Replace with placeholder that includes quiz ID for inline rendering
         const placeholder = `<QUIZ_PLACEHOLDER_${quiz.id}/>`;
         cleanContent = cleanContent.replace(quizMatch[0], placeholder);
+        // Reset regex to account for content change
+        quizRegex.lastIndex = 0;
       }
     } catch (error) {
       console.error('Error parsing quiz block:', error);
       // Remove the quiz block if parsing fails
       cleanContent = cleanContent.replace(quizMatch[0], '');
+      // Reset regex to account for content change
+      quizRegex.lastIndex = 0;
     }
   }
 
   // Extract exercise blocks and replace with placeholders
   const exerciseRegex = /```exercise\n([\s\S]*?)\n```/g;
   let exerciseMatch;
-  while ((exerciseMatch = exerciseRegex.exec(content)) !== null) {
+  while ((exerciseMatch = exerciseRegex.exec(cleanContent)) !== null) {
     try {
       const exerciseData = yaml.load(exerciseMatch[1]) as RawExerciseData;
       const exercise = parseExerciseData(exerciseData);
@@ -267,17 +281,21 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
         // Replace with placeholder that includes exercise ID for inline rendering
         const placeholder = `<EXERCISE_PLACEHOLDER_${exercise.id}/>`;
         cleanContent = cleanContent.replace(exerciseMatch[0], placeholder);
+        // Reset regex to account for content change
+        exerciseRegex.lastIndex = 0;
       }
     } catch (error) {
       console.error('Error parsing exercise block:', error);
       // Remove the exercise block if parsing fails
       cleanContent = cleanContent.replace(exerciseMatch[0], '');
+      // Reset regex to account for content change
+      exerciseRegex.lastIndex = 0;
     }
   }
 
   // Extract callout blocks and replace with placeholders
   // Use a more sophisticated approach to handle nested code blocks
-  const calloutBlocks = extractCalloutBlocks(content);
+  const calloutBlocks = extractCalloutBlocks(cleanContent);
   for (const block of calloutBlocks) {
     const id = `callout-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const callout: CalloutBlock = {
@@ -296,7 +314,7 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
   // Extract plot blocks and replace with placeholders
   const plotRegex = /```plot\n([\s\S]*?)\n```/g;
   let plotMatch;
-  while ((plotMatch = plotRegex.exec(content)) !== null) {
+  while ((plotMatch = plotRegex.exec(cleanContent)) !== null) {
     try {
       const plotData = yaml.load(plotMatch[1]) as RawPlotData;
       const plot = parsePlotData(plotData);
@@ -305,18 +323,22 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
         // Replace with placeholder for inline rendering
         const placeholder = `<PLOT_PLACEHOLDER_${plot.id}/>`;
         cleanContent = cleanContent.replace(plotMatch[0], placeholder);
+        // Reset regex to account for content change
+        plotRegex.lastIndex = 0;
       }
     } catch (error) {
       console.error('Error parsing plot block:', error);
       // Remove the plot block if parsing fails
       cleanContent = cleanContent.replace(plotMatch[0], '');
+      // Reset regex to account for content change
+      plotRegex.lastIndex = 0;
     }
   }
 
   // Extract table blocks and replace with placeholders
   const tableRegex = /```table\n([\s\S]*?)\n```/g;
   let tableMatch;
-  while ((tableMatch = tableRegex.exec(content)) !== null) {
+  while ((tableMatch = tableRegex.exec(cleanContent)) !== null) {
     try {
       const tableData = yaml.load(tableMatch[1]) as RawTableData;
       const table = parseTableData(tableData);
@@ -325,18 +347,22 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
         // Replace with placeholder for inline rendering
         const placeholder = `<TABLE_PLACEHOLDER_${table.id}/>`;
         cleanContent = cleanContent.replace(tableMatch[0], placeholder);
+        // Reset regex to account for content change
+        tableRegex.lastIndex = 0;
       }
     } catch (error) {
       console.error('Error parsing table block:', error);
       // Remove the table block if parsing fails
       cleanContent = cleanContent.replace(tableMatch[0], '');
+      // Reset regex to account for content change
+      tableRegex.lastIndex = 0;
     }
   }
 
   // Extract algorithm widget blocks and replace with placeholders
   const algorithmWidgetRegex = /```algorithm-widget\n([\s\S]*?)\n```/g;
   let algorithmWidgetMatch;
-  while ((algorithmWidgetMatch = algorithmWidgetRegex.exec(content)) !== null) {
+  while ((algorithmWidgetMatch = algorithmWidgetRegex.exec(cleanContent)) !== null) {
     try {
       const algorithmWidgetData = yaml.load(algorithmWidgetMatch[1]) as RawAlgorithmWidgetData;
       const algorithmWidget = parseAlgorithmWidgetData(algorithmWidgetData);
@@ -345,11 +371,39 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
         // Replace with placeholder for inline rendering
         const placeholder = `<ALGORITHM_WIDGET_PLACEHOLDER_${algorithmWidget.id}/>`;
         cleanContent = cleanContent.replace(algorithmWidgetMatch[0], placeholder);
+        // Reset regex to account for content change
+        algorithmWidgetRegex.lastIndex = 0;
       }
     } catch (error) {
       console.error('Error parsing algorithm widget block:', error);
       // Remove the algorithm widget block if parsing fails
       cleanContent = cleanContent.replace(algorithmWidgetMatch[0], '');
+      // Reset regex to account for content change
+      algorithmWidgetRegex.lastIndex = 0;
+    }
+  }
+
+  // Extract widget blocks and replace with placeholders
+  const widgetRegex = /```widget\n([\s\S]*?)\n```/g;
+  let widgetMatch;
+  while ((widgetMatch = widgetRegex.exec(cleanContent)) !== null) {
+    try {
+      const widgetData = yaml.load(widgetMatch[1]) as RawWidgetData;
+      const widget = parseWidgetData(widgetData);
+      if (widget) {
+        widgets.push(widget);
+        // Replace with placeholder for inline rendering
+        const placeholder = `<WIDGET_PLACEHOLDER_${widget.id}/>`;
+        cleanContent = cleanContent.replace(widgetMatch[0], placeholder);
+        // Reset regex to account for content change
+        widgetRegex.lastIndex = 0;
+      }
+    } catch (error) {
+      console.error('Error parsing widget block:', error);
+      // Remove the widget block if parsing fails
+      cleanContent = cleanContent.replace(widgetMatch[0], '');
+      // Reset regex to account for content change
+      widgetRegex.lastIndex = 0;
     }
   }
 
@@ -361,7 +415,8 @@ export function parseMarkdownContent(content: string): ParsedMarkdownContent {
     callouts,
     plots,
     tables,
-    algorithmWidgets
+    algorithmWidgets,
+    widgets
   };
 }
 
@@ -672,5 +727,20 @@ function parseAlgorithmWidgetData(data: RawAlgorithmWidgetData): AlgorithmWidget
     title: data.title,
     initialData: data.initialData,
     options: data.options || {}
+  };
+}
+
+function parseWidgetData(data: RawWidgetData): WidgetBlock | null {
+  if (!data.id || !data.type) {
+    console.error('Widget must have id and type');
+    return null;
+  }
+
+  return {
+    id: data.id,
+    type: data.type,
+    title: data.title,
+    description: data.description,
+    props: data.props || {}
   };
 }

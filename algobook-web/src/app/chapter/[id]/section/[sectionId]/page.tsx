@@ -34,7 +34,16 @@ export default async function SectionPage({ params }: SectionPageProps) {
         />
 
         {/* Section Content with Mixed Prose and Interactive Elements */}
-        <ProcessedMarkdownContent content={section.content} quizzes={(section as any).quizzes || []} exercises={(section as any).exercises || []} callouts={(section as any).callouts || []} plots={(section as any).plots || []} tables={(section as any).tables || []} algorithmWidgets={(section as any).algorithmWidgets || []} />
+        <ProcessedMarkdownContent 
+          content={section.content} 
+          quizzes={(section as any).quizzes || []} 
+          exercises={(section as any).exercises || []} 
+          callouts={(section as any).callouts || []} 
+          plots={(section as any).plots || []} 
+          tables={(section as any).tables || []} 
+          algorithmWidgets={(section as any).algorithmWidgets || []}
+          widgets={(section as any).widgets || []}
+        />
 
         {/* Interactive Elements */}
         {section.interactiveElements.map((element) => (

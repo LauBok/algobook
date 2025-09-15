@@ -1,7 +1,51 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { PlotBlock } from '@/lib/types/content';
+import 'katex/dist/katex.min.css';
+
+// Function to load MathJax if not available (Plotly-compatible version)
+const loadMathJax = () => {
+  return new Promise<void>((resolve, reject) => {
+    if ((window as any).MathJax && (window as any).MathJax.Hub) {
+      resolve();
+      return;
+    }
+    
+    // Configure MathJax before loading
+    (window as any).MathJax = {
+      AuthorInit: function() {
+        console.log('MathJax AuthorInit called - ready for Plotly');
+        resolve();
+      },
+      tex2jax: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      TeX: {
+        extensions: ['AMSmath.js', 'AMSsymbols.js']
+      }
+    };
+    
+    const script = document.createElement('script');
+    // Use MathJax v2 with the config Plotly expects
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML';
+    script.async = true;
+    script.onerror = reject;
+    document.head.appendChild(script);
+    
+    // Fallback timeout in case AuthorInit doesn't fire
+    setTimeout(() => {
+      if ((window as any).MathJax && (window as any).MathJax.Hub) {
+        console.log('MathJax v2 ready via timeout fallback');
+        resolve();
+      }
+    }, 3000);
+  });
+};
 
 interface PlotRendererProps {
   plot: PlotBlock;
@@ -14,28 +58,69 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [plotlyInstance, setPlotlyInstance] = useState<any>(null);
 
+  // Helper function to render content with LaTeX support
+  const renderPlotContent = (text: string, inline: boolean = false) => {
+    const Component = inline ? 'span' : 'div';
+    return (
+      <Component>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={{
+            // Inline elements should not add extra spacing
+            p: ({ children }) => <>{children}</>,
+            // Style code blocks consistently
+            code: ({ children, className }) => {
+              return className ? (
+                <code className={`${className} bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-800`}>
+                  {children}
+                </code>
+              ) : (
+                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-800">
+                  {children}
+                </code>
+              );
+            },
+            // Ensure other elements don't add unwanted spacing
+            em: ({ children }) => <em>{children}</em>,
+            strong: ({ children }) => <strong className="font-bold">{children}</strong>
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </Component>
+    );
+  };
+
   useEffect(() => {
-    // Dynamic import to avoid SSR issues
-    import('plotly.js-dist-min').then((Plotly) => {
+    const createPlot = async () => {
       if (!plotRef.current) return;
+      
+      try {
+        // Skip MathJax loading - we want plain text only
+        
+        // Load Plotly without MathJax support
+        const Plotly = await import('plotly.js-dist-min');
 
       // Convert our plot data to Plotly format
-      const traces: any[] = plot.data.map((series) => ({
-        x: series.x,
-        y: series.y,
-        name: series.name,
-        type: getPlotlyType(plot.type),
-        mode: series.mode || getDefaultMode(plot.type),
-        marker: series.marker || getDefaultMarker(plot.type),
-      }));
+      const traces: any[] = plot.data.map((series) => {
+        return {
+          x: series.x,
+          y: series.y,
+          name: series.name,
+          type: getPlotlyType(plot.type),
+          mode: series.mode || getDefaultMode(plot.type),
+          marker: series.marker || getDefaultMarker(plot.type),
+        };
+      });
 
       const layout: any = {
-        title: plot.title || '',
+        title: processLatexForPlotly(plot.title || ''),
         xaxis: {
-          title: plot.options?.xLabel || 'X'
+          title: processLatexForPlotly(plot.options?.xLabel || 'X')
         },
         yaxis: {
-          title: plot.options?.yLabel || 'Y'
+          title: processLatexForPlotly(plot.options?.yLabel || 'Y')
         },
         showlegend: plot.options?.showLegend !== false,
         width: plot.options?.width || undefined, // Let it be responsive
@@ -66,6 +151,8 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
           size: 12,
           color: '#374151'
         },
+        // Enable LaTeX/MathJax for the entire plot
+        annotations: [],
         modebar: {
           orientation: 'h',
           bgcolor: 'rgba(255, 255, 255, 0.8)',
@@ -80,6 +167,8 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
         displaylogo: false,
         modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d', 'autoScale2d'],
         modeBarButtonsToAdd: [],
+        // Disable MathJax to show raw text
+        mathjax: false,
         toImageButtonOptions: {
           format: 'png',
           filename: plot.title?.toLowerCase().replace(/\s+/g, '_') || 'plot',
@@ -89,21 +178,27 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
         },
       };
 
-      Plotly.newPlot(plotRef.current, traces, layout, config);
-      setPlotlyInstance(Plotly);
-    }).catch((error) => {
-      console.error('Error loading Plotly:', error);
-      if (plotRef.current) {
-        plotRef.current.innerHTML = `
-          <div class="flex items-center justify-center h-64 bg-red-50 border border-red-200 rounded-lg">
-            <div class="text-center">
-              <p class="text-red-600 font-medium">Error loading plot</p>
-              <p class="text-red-500 text-sm mt-1">Please check the plot configuration</p>
+        // Create the plot first
+        await Plotly.newPlot(plotRef.current, traces, layout, config);
+
+        // Since we're using plain text for legends, no additional processing needed
+        setPlotlyInstance(Plotly);
+      } catch (error) {
+        console.error('Error loading Plotly:', error);
+        if (plotRef.current) {
+          plotRef.current.innerHTML = `
+            <div class="flex items-center justify-center h-64 bg-red-50 border border-red-200 rounded-lg">
+              <div class="text-center">
+                <p class="text-red-600 font-medium">Error loading plot</p>
+                <p class="text-red-500 text-sm mt-1">Please check the plot configuration</p>
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        }
       }
-    });
+    };
+
+    createPlot();
 
     // Cleanup function
     return () => {
@@ -157,7 +252,7 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
     <div className="mb-8 w-full">
       {plot.title && (
         <h4 className="text-lg font-semibold text-gray-900 mb-4">
-          📊 {plot.title}
+          📊 {renderPlotContent(plot.title, true)}
         </h4>
       )}
       <div 
@@ -207,6 +302,21 @@ export default function PlotRenderer({ plot }: PlotRendererProps) {
       </div>
     </div>
   );
+}
+
+
+// Helper function to process LaTeX for Plotly MathJax
+function processLatexForPlotly(text: string): string {
+  if (!text) return text;
+  
+  // Plotly expects LaTeX to be wrapped in $...$ delimiters for MathJax
+  // If text already contains LaTeX, keep it as is
+  if (text.includes('$')) {
+    return text;
+  }
+  
+  // For non-LaTeX text, return as-is
+  return text;
 }
 
 // Helper functions to convert our plot types to Plotly types

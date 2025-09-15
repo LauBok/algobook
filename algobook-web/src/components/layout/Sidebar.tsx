@@ -44,6 +44,23 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
     return ProgressManager.isChallengeCompleted(challengeId);
   };
 
+  // Define which chapters are currently available (written)
+  const availableChapters = new Set([
+    '01-getting-started',
+    '02-logic-control-flow', 
+    '03-loops-iteration',
+    '04-lists-algorithms',
+    '05-functions',
+    '06-recursion-divide-conquer',
+    '07-algorithm-efficiency',
+    '08-binary-search-mastery',
+    '09-sorting-algorithms'
+  ]);
+
+  const isChapterAvailable = (chapterId: string) => {
+    return availableChapters.has(chapterId);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -71,19 +88,27 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
               {part.chapters.map((chapter) => {
                 const isActive = pathname === `/chapter/${chapter.id}`;
                 const isCompleted = isChapterCompleted(chapter.id);
+                const isAvailable = isChapterAvailable(chapter.id);
                 const progress = getChapterProgress(chapter.id);
                 const progressPercentage = progress.total > 0 
                   ? (progress.completed / progress.total) * 100 
                   : 0;
 
+                const ChapterComponent = isAvailable ? Link : 'div';
+                const chapterProps = isAvailable 
+                  ? { href: `/chapter/${chapter.id}` }
+                  : {};
+
                 return (
-                  <Link
+                  <ChapterComponent
                     key={chapter.id}
-                    href={`/chapter/${chapter.id}`}
+                    {...chapterProps}
                     className={`block p-3 rounded-lg transition-colors ${
                       isActive
                         ? 'bg-blue-50 border-l-4 border-blue-600'
-                        : 'hover:bg-gray-50'
+                        : isAvailable 
+                        ? 'hover:bg-gray-50 cursor-pointer'
+                        : 'cursor-not-allowed opacity-60'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -93,9 +118,10 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                             {chapter.order}.
                           </span>
                           <h4 className={`text-sm font-medium ${
-                            isActive ? 'text-blue-900' : 'text-gray-900'
+                            isActive ? 'text-blue-900' : isAvailable ? 'text-gray-900' : 'text-gray-500'
                           }`}>
                             {chapter.title}
+                            {!isAvailable && <span className="text-xs ml-2 text-gray-400">(Coming Soon)</span>}
                           </h4>
                         </div>
                         
@@ -119,7 +145,13 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
 
                       {/* Completion Status */}
                       <div className="flex items-center ml-2">
-                        {isCompleted ? (
+                        {!isAvailable ? (
+                          <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : isCompleted ? (
                           <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
                             <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -134,22 +166,38 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </ChapterComponent>
                 );
               })}
               
               {/* Part Challenge */}
               {part.challenge && (() => {
                 const challengeCompleted = isChallengeCompleted(part.challenge.id);
+                
+                // Map challenge IDs to their specific URLs
+                const getChallengeUrl = (challengeId: string) => {
+                  switch (challengeId) {
+                    case 'part1-challenge':
+                      return '/challenge/stone-game';
+                    case 'part2-challenge':
+                      return '/challenge/mastermind';
+                    default:
+                      return '/challenge';
+                  }
+                };
+                
+                const challengeUrl = getChallengeUrl(part.challenge.id);
+                const isCurrentChallenge = pathname === challengeUrl;
+                
                 return (
                   <Link
-                    href="/challenge"
+                    href={challengeUrl}
                     className={`block p-3 rounded-lg transition-colors border-2 ${
                       challengeCompleted 
                         ? 'border-solid border-green-400 bg-green-50' 
                         : 'border-dashed border-purple-300 hover:bg-purple-50 hover:border-purple-400'
                     } ${
-                      pathname === '/challenge'
+                      isCurrentChallenge
                         ? challengeCompleted 
                           ? 'bg-green-100 border-green-600' 
                           : 'bg-purple-50 border-purple-600'
@@ -161,7 +209,7 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{challengeCompleted ? '🏆' : '🎮'}</span>
                           <h4 className={`text-sm font-bold ${
-                            pathname === '/challenge' 
+                            isCurrentChallenge 
                               ? challengeCompleted ? 'text-green-900' : 'text-purple-900'
                               : challengeCompleted ? 'text-green-700' : 'text-purple-700'
                           }`}>

@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import { TableBlock } from '@/lib/types/content';
+import 'katex/dist/katex.min.css';
 
 interface TableRendererProps {
   table: TableBlock;
@@ -53,56 +58,45 @@ export default function TableRenderer({ table }: TableRendererProps) {
     }
   };
 
-  // Helper function to render inline formatting (code and bold)
-  const renderInlineFormatting = (text: string) => {
-    const parts: (string | React.ReactElement)[] = [];
-    let lastIndex = 0;
-    let keyCounter = 0;
-    
-    // Combined regex to match both inline code and bold text
-    const formattingRegex = /(`([^`]+)`)|(\*\*([^*]+)\*\*)/g;
-    let match;
-
-    while ((match = formattingRegex.exec(text)) !== null) {
-      // Add text before the match
-      if (match.index > lastIndex) {
-        parts.push(text.slice(lastIndex, match.index));
-      }
-      
-      if (match[1]) {
-        // Inline code match (backticks)
-        parts.push(
-          <code key={`inline-${keyCounter++}`} className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-800">
-            {match[2]}
-          </code>
-        );
-      } else if (match[3]) {
-        // Bold text match (double asterisks)
-        parts.push(
-          <strong key={`bold-${keyCounter++}`} className="font-bold">
-            {match[4]}
-          </strong>
-        );
-      }
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Add any remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex));
-    }
-    
-    // If no formatting was found, return original text
-    // If formatting was found, return the parts array (React will render it)
-    return parts.length > 0 ? parts : text;
+  // Helper function to render content with LaTeX, formatting (code and bold)
+  const renderTableContent = (text: string, inline: boolean = false) => {
+    const Component = inline ? 'span' : 'div';
+    return (
+      <Component style={{ textTransform: 'none' }}>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex, rehypeRaw]}
+          components={{
+            // Inline elements should not add extra spacing
+            p: ({ children }) => <>{children}</>,
+            // Style code blocks to match table design
+            code: ({ children, className }) => {
+              return className ? (
+                <code className={`${className} bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-800`}>
+                  {children}
+                </code>
+              ) : (
+                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-blue-800">
+                  {children}
+                </code>
+              );
+            },
+            // Ensure other elements don't add unwanted spacing
+            em: ({ children }) => <em>{children}</em>,
+            strong: ({ children }) => <strong className="font-bold">{children}</strong>
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      </Component>
+    );
   };
 
   return (
     <div className="mb-8">
       {table.title && (
         <h4 className="text-lg font-semibold text-gray-900 mb-4">
-          📊 {table.title}
+          📊 {renderTableContent(table.title, true)}
         </h4>
       )}
       
@@ -126,12 +120,13 @@ export default function TableRenderer({ table }: TableRendererProps) {
                 <th
                   key={index}
                   onClick={() => handleSort(index)}
-                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider ${
                     table.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
                   }`}
+                  style={{ textTransform: 'uppercase' }}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>{renderInlineFormatting(header)}</span>
+                    <span>{renderTableContent(header)}</span>
                     {table.sortable && (
                       <span className="text-gray-400">
                         {sortColumn === index ? (
@@ -151,7 +146,7 @@ export default function TableRenderer({ table }: TableRendererProps) {
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {row.map((cell, cellIndex) => (
                   <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {renderInlineFormatting(cell)}
+                    {renderTableContent(cell)}
                   </td>
                 ))}
               </tr>
@@ -169,7 +164,7 @@ export default function TableRenderer({ table }: TableRendererProps) {
       
       {table.caption && (
         <p className="mt-2 text-sm text-gray-600 italic">
-          {table.caption}
+          {renderTableContent(table.caption)}
         </p>
       )}
       

@@ -19,6 +19,7 @@ export default function Header() {
   const navItems = [
     { href: '/', label: 'Home', active: pathname === '/' },
     { href: '/chapters', label: 'Chapters', active: pathname.startsWith('/chapter') },
+    { href: '/challenge', label: 'Challenges', active: pathname.startsWith('/challenge') },
     { href: '/progress', label: 'Progress', active: pathname === '/progress' },
     { href: '/settings', label: 'Settings', active: pathname === '/settings' },
   ];

@@ -5,10 +5,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer } from '@/components/interactive';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer } from '@/components/interactive';
 import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
 import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
-import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget } from '@/lib/types/content';
+import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
 import 'katex/dist/katex.min.css';
 
 interface ProcessedMarkdownContentProps {
@@ -19,6 +19,7 @@ interface ProcessedMarkdownContentProps {
   plots?: PlotBlock[];
   tables?: TableBlock[];
   algorithmWidgets?: AlgorithmWidget[];
+  widgets?: WidgetBlock[];
 }
 
 interface CodeBlockInfo {
@@ -53,7 +54,7 @@ interface MergeVisualizerInfo {
 }
 
 
-export default function ProcessedMarkdownContent({ content, quizzes = [], exercises = [], callouts = [], plots = [], tables = [], algorithmWidgets = [] }: ProcessedMarkdownContentProps) {
+export default function ProcessedMarkdownContent({ content, quizzes = [], exercises = [], callouts = [], plots = [], tables = [], algorithmWidgets = [], widgets = [] }: ProcessedMarkdownContentProps) {
   const codeBlocks: CodeBlockInfo[] = [];
   const callStackVisualizers: CallStackVisualizerInfo[] = [];
   const binarySearchVisualizers: BinarySearchVisualizerInfo[] = [];
@@ -62,6 +63,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
   const plotBlocks: PlotBlock[] = plots;
   const tableBlocks: TableBlock[] = tables;
   const algorithmWidgetBlocks: AlgorithmWidget[] = algorithmWidgets;
+  const widgetBlocks: WidgetBlock[] = widgets;
   
   // First pass: extract executable code blocks and callstack visualizers, replace with placeholders
   const processedContent = content
@@ -158,7 +160,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
   // Process placeholders in the content
   
   // Find all placeholders and their positions
-  const placeholders: Array<{ type: 'code' | 'quiz' | 'exercise' | 'callout' | 'plot' | 'table' | 'algorithm-widget' | 'callstack-visualizer' | 'binary-search-visualizer' | 'merge-visualizer', id: string, position: number, match: string }> = [];
+  const placeholders: Array<{ type: 'code' | 'quiz' | 'exercise' | 'callout' | 'plot' | 'table' | 'algorithm-widget' | 'callstack-visualizer' | 'binary-search-visualizer' | 'merge-visualizer' | 'widget', id: string, position: number, match: string }> = [];
   
   // Find code placeholders
   let match;
@@ -271,6 +273,17 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
     });
   }
   
+  // Find widget placeholders
+  const widgetGlobalRegex = /<WIDGET_PLACEHOLDER_([^/>]+)\/>/g;
+  while ((match = widgetGlobalRegex.exec(processedContent)) !== null) {
+    placeholders.push({
+      type: 'widget',
+      id: match[1],
+      position: match.index,
+      match: match[0]
+    });
+  }
+  
   // Sort placeholders by position
   placeholders.sort((a, b) => a.position - b.position);
   
@@ -329,6 +342,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
         const callStackVisualizerMatch = part.match(/<CALLSTACK_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
         const binarySearchVisualizerMatch = part.match(/<BINARY_SEARCH_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
         const mergeVisualizerMatch = part.match(/<MERGE_VISUALIZER_PLACEHOLDER_([^/>]+)\/>/);
+        const widgetMatch = part.match(/<WIDGET_PLACEHOLDER_([^/>]+)\/>/);
         
         // Determine the widget component to render
         const getAlgorithmWidgetComponent = (algorithm: string, props: Record<string, unknown>) => {
@@ -340,6 +354,37 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
             default:
               console.warn(`Unknown algorithm widget: ${algorithm}`);
               return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown algorithm: {algorithm}</div>;
+          }
+        };
+        
+        // Determine the custom widget component to render
+        const getWidgetComponent = (type: string, props: Record<string, any>) => {
+          switch (type) {
+            case 'ComplexityRankingWidget':
+              return <ComplexityRankingWidget {...props} />;
+            case 'AlgorithmMysteryGame':
+              return <AlgorithmMysteryGame {...props} />;
+            case 'BinarySearchStepVisualizer':
+              return <BinarySearchStepVisualizer {...props} />;
+            case 'Matrix2DSearchVisualizer':
+              return <Matrix2DSearchVisualizer {...props} />;
+            case 'RotatedArraySearchVisualizer':
+              return <RotatedArraySearchVisualizer {...props} />;
+            case 'PeakFindingVisualizer':
+              return <PeakFindingVisualizer {...props} />;
+            case 'MastermindChallenge':
+              return <MastermindChallenge {...props} />;
+            case 'MergeSortVisualizer':
+              return <MergeSortVisualizer {...props} />;
+            case 'QuickSortVisualizer':
+              return <QuickSortVisualizer {...props} />;
+            case 'LomutoPartitionVisualizer':
+              return <LomutoPartitionVisualizer {...props} />;
+            case 'DecisionTreeVisualizer':
+              return <DecisionTreeVisualizer {...props} />;
+            default:
+              console.warn(`Unknown widget type: ${type}`);
+              return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown widget: {type}</div>;
           }
         };
         
@@ -580,6 +625,22 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
                   initialLeft={mergeVisualizer.initialLeft}
                   initialRight={mergeVisualizer.initialRight}
                 />
+              </div>
+            );
+          }
+          return null;
+        } else if (widgetMatch) {
+          // Handle custom widget blocks
+          const widgetId = widgetMatch[1];
+          const widget = widgetBlocks.find(block => block.id === widgetId);
+          if (widget) {
+            return (
+              <div key={index} className="mb-8">
+                {getWidgetComponent(widget.type, {
+                  ...widget.props,
+                  title: widget.title,
+                  description: widget.description
+                })}
               </div>
             );
           }

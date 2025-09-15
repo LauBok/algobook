@@ -55,6 +55,14 @@ export interface AlgorithmWidget {
   };
 }
 
+export interface WidgetBlock {
+  id: string;
+  type: string; // The widget component name
+  title?: string;
+  description?: string;
+  props?: Record<string, any>; // Additional props for the widget
+}
+
 export interface Section {
   id: string;
   title: string;
@@ -68,6 +76,7 @@ export interface Section {
   plots?: PlotBlock[]; // For inline plot visualizations
   tables?: TableBlock[]; // For inline data tables
   algorithmWidgets?: AlgorithmWidget[]; // For interactive algorithm visualizations
+  widgets?: WidgetBlock[]; // For custom interactive widgets
   estimatedMinutes: number;
 }
 

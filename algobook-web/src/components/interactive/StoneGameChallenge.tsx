@@ -77,6 +77,28 @@ def make_move(remaining_stones):
   });
 
   const [animationSpeed, setAnimationSpeed] = useState(1000);
+  
+  // Modal state for expanded code editor
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState<boolean>(false);
+  
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isCodeModalOpen) {
+        setIsCodeModalOpen(false);
+      }
+    };
+    
+    if (isCodeModalOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isCodeModalOpen]);
   const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Save algorithm code to localStorage whenever it changes
@@ -200,11 +222,12 @@ def make_move(remaining_stones):
   const retryGame = () => {
     setGameState(prev => ({
       ...prev,
+      stones: prev.initialStones, // Reset stones to initial value
       currentPlayer: 'human', // Reset to setup state
       gameStatus: 'setup',
       winner: null,
       moveHistory: []
-      // Keep stones and allowedMoves unchanged
+      // Keep allowedMoves unchanged
     }));
   };
 
@@ -1002,7 +1025,15 @@ print(result)
 
                 {/* Algorithm Code Editor - Full Width */}
                 <div className="mb-6">
-                  <h3 className="font-medium text-gray-700 mb-3">Your Algorithm:</h3>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-medium text-gray-700">Your Algorithm:</h3>
+                    <button
+                      onClick={() => setIsCodeModalOpen(true)}
+                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    >
+                      🔍 Expand Editor
+                    </button>
+                  </div>
                   <div className="border border-gray-300 rounded-lg overflow-hidden">
                     <Editor
                       height="400px"
@@ -1140,6 +1171,43 @@ print(result)
           </div>
         </div>
       </div>
+
+      {/* Floating Code Editor Modal */}
+      {isCodeModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl h-4/5 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">🔍 Expanded Code Editor</h3>
+              <button
+                onClick={() => setIsCodeModalOpen(false)}
+                className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="flex-1 p-4">
+              <Editor
+                height="100%"
+                language="python"
+                value={challengeState.algorithmCode}
+                onChange={(value) => setChallengeState(prev => ({ ...prev, algorithmCode: value || '' }))}
+                theme="vs-light"
+                options={{
+                  readOnly: challengeState.isRunning,
+                  minimap: { enabled: true },
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 4,
+                  insertSpaces: true,
+                  wordWrap: 'on'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

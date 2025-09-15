@@ -384,6 +384,113 @@ export const CHAPTER_METADATA: Record<string, ChapterMetadata> = {
       'Optimize inefficient algorithms by choosing appropriate data structures',
       'Apply optimization techniques to transform O(n²) algorithms into O(n) solutions'
     ]
+  },
+
+  '08-binary-search-mastery': {
+    id: '08-binary-search-mastery',
+    title: 'Binary Search Mastery',
+    order: 8,
+    part: 2,
+    partTitle: 'Efficient Algorithms & Complexity',
+    description: 'Master binary search algorithm and its applications for efficient searching in sorted data',
+    sections: [
+      {
+        id: '8.1',
+        title: 'Binary Search Revisited: From Basics to Mastery',
+        order: 1,
+        estimatedMinutes: 45,
+        description: 'Solidify understanding of binary search fundamentals and appreciate its logarithmic power.'
+      },
+      {
+        id: '8.2',
+        title: 'Binary Search Variations: Beyond Simple Search',
+        order: 2,
+        estimatedMinutes: 50,
+        description: 'Explore advanced binary search variations and boundary-finding techniques.'
+      },
+      {
+        id: '8.3',
+        title: 'Binary Search on Answers: Optimization Applications',
+        order: 3,
+        estimatedMinutes: 55,
+        description: 'Apply binary search to optimization problems and answer-finding scenarios.'
+      },
+      {
+        id: '8.4',
+        title: 'Advanced Applications: 2D Search and Beyond',
+        order: 4,
+        estimatedMinutes: 50,
+        description: 'Master advanced binary search applications in multi-dimensional and complex scenarios.'
+      },
+      {
+        id: '8.5',
+        title: 'Practice: Binary Search Problem Solving',
+        order: 5,
+        estimatedMinutes: 40,
+        description: 'Apply binary search techniques to solve challenging programming problems.'
+      }
+    ],
+    learningObjectives: [
+      'Master binary search algorithm and its O(log n) time complexity',
+      'Implement various binary search patterns for different problem types',
+      'Apply binary search to optimization and answer-finding problems',
+      'Solve complex multi-dimensional search problems',
+      'Debug and optimize binary search implementations for edge cases'
+    ]
+  },
+
+  '09-sorting-algorithms': {
+    id: '09-sorting-algorithms',
+    title: 'Sorting Algorithms',
+    order: 9,
+    part: 2,
+    partTitle: 'Efficient Algorithms & Complexity',
+    description: 'Explore fundamental sorting algorithms and understand their performance characteristics',
+    sections: [
+      {
+        id: '9.1',
+        title: 'Why Sorting Matters: Foundation of Computer Science',
+        order: 1,
+        estimatedMinutes: 40,
+        description: 'Understand why sorting is crucial for enabling fast data operations and real-world applications.'
+      },
+      {
+        id: '9.2',
+        title: 'Merge Sort: Recursive Divide-and-Conquer Sorting',
+        order: 2,
+        estimatedMinutes: 55,
+        description: 'Master merge sort algorithm and understand its guaranteed O(n log n) performance.'
+      },
+      {
+        id: '9.3',
+        title: 'Quick Sort: Efficient Recursive Partitioning',
+        order: 3,
+        estimatedMinutes: 60,
+        description: 'Learn quicksort algorithm and understand its average-case efficiency and practical importance.'
+      },
+      {
+        id: '9.4',
+        title: 'Sorting Algorithm Analysis and Comparison',
+        order: 4,
+        estimatedMinutes: 50,
+        description: 'Compare different sorting algorithms and understand when to use each approach.'
+      },
+      {
+        id: '9.5',
+        title: 'Practice: Advanced Sorting Applications',
+        order: 5,
+        estimatedMinutes: 45,
+        description: 'Apply sorting algorithms to solve complex problems and optimize data processing.'
+      }
+    ],
+    learningObjectives: [
+      'Understand why sorting is fundamental to computer science and data processing',
+      'Implement merge sort with its guaranteed O(n log n) performance',
+      'Master quicksort algorithm and understand its practical advantages',
+      'Analyze and compare different sorting algorithms for various use cases',
+      'Apply sorting techniques to solve complex data processing problems',
+      'Choose optimal sorting algorithms based on data characteristics and constraints'
+    ]
   }
 };
 
@@ -410,9 +517,14 @@ export const CURRICULUM_STRUCTURE = [
     title: "Efficient Algorithms & Complexity",
     chapters: [
       { id: "07-algorithm-efficiency", title: "Algorithm Efficiency and Big O", order: 7 },
-      { id: "08-binary-search", title: "Binary Search Mastery", order: 8 },
-      { id: "09-sorting", title: "Sorting Algorithms", order: 9 },
-    ]
+      { id: "08-binary-search-mastery", title: "Binary Search Mastery", order: 8 },
+      { id: "09-sorting-algorithms", title: "Sorting Algorithms", order: 9 },
+    ],
+    challenge: {
+      id: "part2-challenge",
+      title: "Challenge: Mastermind",
+      description: "Apply binary search optimization thinking to crack the code!"
+    }
   },
   {
     part: 3,

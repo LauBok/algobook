@@ -30,7 +30,8 @@ export function loadParsedSectionContent(chapterId: string, sectionId: string): 
       callouts: [],
       plots: [],
       tables: [],
-      algorithmWidgets: []
+      algorithmWidgets: [],
+      widgets: []
     };
   }
 }
@@ -66,10 +67,12 @@ function createSectionFromMarkdown(
     interactiveElements: (fallbackData?.interactiveElements as any) || [],
     exercises: parsed.exercises.length > 0 ? parsed.exercises : ((fallbackData?.exercises as any) || []),
     quiz: parsed.quizzes.length > 0 ? parsed.quizzes[0] : (fallbackData?.quiz as any) || undefined,
+    quizzes: parsed.quizzes || [],  // Add all quizzes for inline rendering
     callouts: parsed.callouts || [],
     plots: parsed.plots || [],
     tables: parsed.tables || [],
-    algorithmWidgets: parsed.algorithmWidgets || []
+    algorithmWidgets: parsed.algorithmWidgets || [],
+    widgets: parsed.widgets || []
   } as any;
 }
 
