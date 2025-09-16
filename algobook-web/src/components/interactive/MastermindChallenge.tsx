@@ -150,13 +150,12 @@ def next_guess():
     # Example: Use evaluate_guess to analyze potential moves
     # analysis = evaluate_guess([0, 0, 1, 1])  # Uses current game history
     # analysis = evaluate_guess([0, 0, 1, 1], custom_guesses, custom_feedback)  # Uses custom history
-    # Returns: [[[black, white], [list_of_possibilities]], [[black, white], [list_of_possibilities]], ...]
+    # Returns: [[[black, white], count], [[black, white], count], ...]
     # 
     # Example usage:
-    # for feedback, possibilities in analysis:
+    # for feedback, count in analysis:
     #     black_pegs, white_pegs = feedback
-    #     num_remaining = len(possibilities)
-    #     print(f"Feedback {feedback}: {num_remaining} possibilities remain")
+    #     print(f"Feedback {feedback}: {count} possibilities remain")
     
     # Minimax strategy: choose the guess that minimizes the maximum remaining possibilities
     
@@ -234,9 +233,30 @@ def next_guess():
   // Mark challenge as completed when 10 consecutive optimal solves achieved
   useEffect(() => {
     if (challengeState.consecutiveOptimalSolves >= 10) {
-      ProgressManager.markChallengeCompleted('part2-mastermind-challenge');
+      ProgressManager.markChallengeCompleted('part2-challenge');
     }
   }, [challengeState.consecutiveOptimalSolves]);
+
+  // One-time migration: fix old challenge ID in localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const progress = ProgressManager.getUserProgress();
+      if (progress.challengesCompleted.includes('part2-mastermind-challenge')) {
+        // Remove old ID and ensure correct ID exists without duplicates
+        const newChallenges = progress.challengesCompleted
+          .filter(id => id !== 'part2-mastermind-challenge')
+          .filter(id => id !== 'part2-challenge')
+          .concat(['part2-challenge']);
+        
+        // Update progress using ProgressManager
+        const updatedProgress = { ...progress, challengesCompleted: newChallenges };
+        ProgressManager.saveUserProgress(updatedProgress);
+        
+        // Force page refresh to update UI
+        window.location.reload();
+      }
+    }
+  }, []);
 
   // Generate random secret code
   const generateSecretCode = (): number[] => {
@@ -1255,9 +1275,9 @@ print(result)
                           <div className="font-mono font-bold text-green-800 mb-1">evaluate_guess(potential_guess, guess_history=None, feedback_history=None)</div>
                           <div className="mb-1"><strong>Purpose:</strong> Analyze how many possibilities remain for each possible feedback</div>
                           <div className="mb-1"><strong>Input:</strong> Guess as list [0-5], optional custom history (defaults to current game)</div>
-                          <div className="mb-1"><strong>Returns:</strong> List of lists: <code>[[feedback, possibilities], [feedback, possibilities], ...]</code></div>
+                          <div className="mb-1"><strong>Returns:</strong> List of lists: <code>[[feedback, count], [feedback, count], ...]</code></div>
                           <div className="mb-1"><strong>Basic:</strong> <code>evaluate_guess([0,1,2,3])</code> uses current game history</div>
-                          <div className="mb-1"><strong>Example:</strong> <code>[[[1,0], [[1,2,3,4], [0,1,3,5]]], [[0,2], [[2,3,1,4]]]]</code></div>
+                          <div className="mb-1"><strong>Example:</strong> <code>[[[1,0], 45], [[0,2], 25], [[2,0], 12]]</code> means feedback [1,0] leaves 45 codes</div>
                           <div><strong>Custom:</strong> <code>evaluate_guess([0,1,2,3], [[1,2,3,4]], [[1,0]])</code> uses custom history</div>
                         </div>
                       </div>

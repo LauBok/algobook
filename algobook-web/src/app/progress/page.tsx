@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { ProgressManager } from '@/lib/utils/progress';
 import { UserProgress } from '@/lib/types';
+import { CHAPTER_METADATA } from '@/lib/data/chapterMetadata';
 
 export default function ProgressPage() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
+  
   const [stats, setStats] = useState<{
     chaptersCompleted: number;
     sectionsCompleted: number;
@@ -18,11 +20,45 @@ export default function ProgressPage() {
   } | null>(null);
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
 
+  // Helper function to get chapter title from metadata
+  const getChapterTitle = (chapterId: string): string => {
+    const chapter = CHAPTER_METADATA[chapterId];
+    if (chapter) {
+      return `Chapter ${chapter.order}: ${chapter.title}`;
+    }
+    // Fallback for chapters not in metadata
+    return `Chapter ${chapterId}`;
+  };
+
   useEffect(() => {
-    // Load progress data
+    // Load progress data and clean up duplicate/old challenge IDs
     const userProgress = ProgressManager.getUserProgress();
+    
+    // Clean up old challenge IDs and duplicates
+    if (userProgress.challengesCompleted.length > 0) {
+      const cleanedChallenges = Array.from(new Set(
+        userProgress.challengesCompleted
+          .filter(id => id !== 'part2-mastermind-challenge') // Remove old ID
+          .map(id => {
+            // Normalize any other old IDs that might exist
+            if (id === 'part2-mastermind-challenge') return 'part2-challenge';
+            return id;
+          })
+      ));
+      
+      if (cleanedChallenges.length !== userProgress.challengesCompleted.length) {
+        // Update progress if we found duplicates or old IDs
+        const cleanedProgress = { ...userProgress, challengesCompleted: cleanedChallenges };
+        ProgressManager.saveUserProgress(cleanedProgress);
+        setProgress(cleanedProgress);
+      } else {
+        setProgress(userProgress);
+      }
+    } else {
+      setProgress(userProgress);
+    }
+    
     const progressStats = ProgressManager.getProgressStats();
-    setProgress(userProgress);
     setStats(progressStats);
   }, []);
 
@@ -144,7 +180,7 @@ export default function ProgressPage() {
                     })
                     .map((chapterId) => (
                     <div key={chapterId} className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-                      <span className="text-green-800">Chapter {chapterId}</span>
+                      <span className="text-green-800">{getChapterTitle(chapterId)}</span>
                       <button
                         onClick={() => resetChapter(chapterId)}
                         className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
@@ -167,7 +203,11 @@ export default function ProgressPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🏆</span>
                         <span className="text-yellow-800">
-                          {challengeId === 'part1-challenge' ? 'Part I Challenge: Stone Game' : challengeId}
+                          {challengeId === 'part1-challenge' 
+                            ? 'Part I Challenge: Stone Game' 
+                            : challengeId === 'part2-challenge'
+                            ? 'Part II Challenge: Mastermind'
+                            : challengeId}
                         </span>
                       </div>
                       <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-medium">
