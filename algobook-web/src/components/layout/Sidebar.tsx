@@ -94,23 +94,7 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                   ? (progress.completed / progress.total) * 100 
                   : 0;
 
-                const ChapterComponent = isAvailable ? Link : 'div';
-                const chapterProps = isAvailable 
-                  ? { href: `/chapter/${chapter.id}` }
-                  : {};
-
-                return (
-                  <ChapterComponent
-                    key={chapter.id}
-                    {...chapterProps}
-                    className={`block p-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-blue-50 border-l-4 border-blue-600'
-                        : isAvailable 
-                        ? 'hover:bg-gray-50 cursor-pointer'
-                        : 'cursor-not-allowed opacity-60'
-                    }`}
-                  >
+                const chapterContent = (
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -166,7 +150,27 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                         )}
                       </div>
                     </div>
-                  </ChapterComponent>
+                );
+
+                return isAvailable ? (
+                  <Link
+                    key={chapter.id}
+                    href={`/chapter/${chapter.id}`}
+                    className={`block p-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-50 border-l-4 border-blue-600'
+                        : 'hover:bg-gray-50 cursor-pointer'
+                    }`}
+                  >
+                    {chapterContent}
+                  </Link>
+                ) : (
+                  <div
+                    key={chapter.id}
+                    className={`block p-3 rounded-lg transition-colors cursor-not-allowed opacity-60`}
+                  >
+                    {chapterContent}
+                  </div>
                 );
               })}
               

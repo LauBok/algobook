@@ -249,7 +249,7 @@ export default function QuickSortVisualizer({
     }
     
     if (index >= step.low && index <= step.high) {
-      if (step.currentJ !== undefined && index < step.currentJ && index > step.currentI) {
+      if (step.currentJ !== undefined && step.currentI !== undefined && index < step.currentJ && index > step.currentI) {
         return 'bg-red-500'; // Elements > pivot
       }
       return 'bg-blue-400'; // Active range
