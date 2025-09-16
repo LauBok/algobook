@@ -104,21 +104,7 @@ export default function ChaptersPage() {
               <div className="grid gap-4">
                 {part.chapters.map((chapter) => {
                   const isAvailable = isChapterAvailable(chapter.id);
-                  const ChapterComponent = isAvailable ? Link : 'div';
-                  const chapterProps = isAvailable 
-                    ? { href: `/chapter/${chapter.id}` }
-                    : {};
-
-                  return (
-                  <ChapterComponent
-                    key={chapter.id}
-                    {...chapterProps}
-                    className={`group border border-gray-200 rounded-lg p-6 transition-all duration-200 bg-white ${
-                      isAvailable 
-                        ? 'hover:border-blue-300 hover:shadow-md cursor-pointer'
-                        : 'opacity-60 cursor-not-allowed'
-                    }`}
-                  >
+                  const chapterContent = (
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
@@ -199,7 +185,23 @@ export default function ChaptersPage() {
                         )}
                       </div>
                     </div>
-                  </ChapterComponent>
+                  );
+
+                  return isAvailable ? (
+                    <Link
+                      key={chapter.id}
+                      href={`/chapter/${chapter.id}`}
+                      className={`group border border-gray-200 rounded-lg p-6 transition-all duration-200 bg-white hover:border-blue-300 hover:shadow-md cursor-pointer`}
+                    >
+                      {chapterContent}
+                    </Link>
+                  ) : (
+                    <div
+                      key={chapter.id}
+                      className={`group border border-gray-200 rounded-lg p-6 transition-all duration-200 bg-white opacity-60 cursor-not-allowed`}
+                    >
+                      {chapterContent}
+                    </div>
                   );
                 })}
               </div>

@@ -157,7 +157,7 @@ export default function DecisionTreeVisualizer({ elements = 3 }: DecisionTreeVis
     setSelectedPath([]);
   };
 
-  const renderNode = (node: TreeNode, level: number = 0): JSX.Element => {
+  const renderNode = (node: TreeNode, level: number = 0): React.ReactElement => {
     const isSelected = currentResult === node.arrangement;
 
     if (node.type === 'result') {

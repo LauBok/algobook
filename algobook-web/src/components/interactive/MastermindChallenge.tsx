@@ -10,7 +10,7 @@ interface GameState {
   guesses: number[][];
   feedback: number[][];  // [black_pegs, white_pegs]
   gameStatus: 'setup' | 'playing' | 'finished';
-  winner: 'algorithm' | 'failed' | null;
+  winner: 'algorithm' | 'human' | 'failed' | null;
   currentGuess: number;
   maxGuesses: number;
 }
