@@ -105,6 +105,24 @@ export interface UserProgress {
   challengesCompleted: string[];
 }
 
+// User settings and profile types
+export interface UserSettings {
+  name: string;
+  avatar: string;
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  totalXp: number;
+  createdAt: string; // ISO timestamp
+  lastActive: string; // ISO timestamp
+}
+
+export interface XpReward {
+  type: 'exercise' | 'quiz' | 'chapter' | 'challenge';
+  amount: number;
+  multiplier?: number; // Based on difficulty or performance
+}
+
 export interface ExerciseProgress {
   completed: boolean;
   attempts: number;

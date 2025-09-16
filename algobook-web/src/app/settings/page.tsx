@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ProgressManager } from '@/lib/utils/progress';
+import { UserSettings } from '@/lib/types';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -45,18 +47,37 @@ function saveSettings(settings: SimpleSettings) {
   }
 }
 
+const AVATAR_OPTIONS = [
+  '👨‍💻', '👩‍💻', '🧑‍💻', '👨‍🎓', '👩‍🎓', '🧑‍🎓', '👨‍🔬', '👩‍🔬', '🧑‍🔬', '🤖',
+  '🐱', '🐶', '🐺', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸',
+  '🐰', '🐹', '🐭', '🐷', '🐮', '🐙', '🦄', '🐲', '🐉', '🦋',
+  '🐧', '🐦', '🦅', '🦉', '🐢', '🐍', '🦎', '🐳', '🐬', '🦈'
+];
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SimpleSettings>(DEFAULT_SETTINGS);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
 
   useEffect(() => {
     const loaded = loadSettings();
     setSettings(loaded);
+    
+    const userProfile = ProgressManager.getUserSettings();
+    setUserSettings(userProfile);
   }, []);
 
   const updateSetting = <K extends keyof SimpleSettings>(key: K, value: SimpleSettings[K]) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     saveSettings(newSettings);
+  };
+
+  const updateUserSetting = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
+    if (!userSettings) return;
+    
+    const newUserSettings = { ...userSettings, [key]: value };
+    setUserSettings(newUserSettings);
+    ProgressManager.saveUserSettings(newUserSettings);
   };
 
   const resetToDefaults = () => {
@@ -102,6 +123,73 @@ export default function SettingsPage() {
         <div className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+
+            {/* Profile Settings */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile</h2>
+              {userSettings && (
+                <div className="space-y-6">
+                  {/* Profile Preview */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-4">
+                      <div className="text-4xl">{userSettings.avatar}</div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{userSettings.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                            Level {userSettings.level}
+                          </span>
+                          <span>{userSettings.totalXp} XP earned</span>
+                        </div>
+                        <div className="mt-2">
+                          <div className="w-48 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${(userSettings.xp / userSettings.xpToNextLevel) * 100}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {userSettings.xp} / {userSettings.xpToNextLevel} XP to level {userSettings.level + 1}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
+                    <input
+                      type="text"
+                      value={userSettings.name}
+                      onChange={(e) => updateUserSetting('name', e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      placeholder="Enter your display name"
+                    />
+                  </div>
+
+                  {/* Avatar Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Avatar</label>
+                    <div className="grid grid-cols-10 gap-2">
+                      {AVATAR_OPTIONS.map((avatar) => (
+                        <button
+                          key={avatar}
+                          onClick={() => updateUserSetting('avatar', avatar)}
+                          className={`text-2xl p-2 rounded-lg border-2 transition-all hover:scale-110 ${
+                            userSettings.avatar === avatar
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {avatar}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Appearance Settings */}
             <div className="mb-8">

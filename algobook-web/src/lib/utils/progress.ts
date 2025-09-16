@@ -1,6 +1,6 @@
 // Progress tracking utilities using localStorage
 
-import { UserProgress, ExerciseProgress, QuizProgress } from '@/lib/types';
+import { UserProgress, ExerciseProgress, QuizProgress, UserSettings, XpReward } from '@/lib/types';
 
 const STORAGE_PREFIX = 'algobook_';
 
@@ -266,5 +266,146 @@ export class ProgressManager {
     );
 
     return Math.round(totalScore / completedQuizzes.length);
+  }
+
+  // User Settings Management
+  static getUserSettings(): UserSettings {
+    if (typeof window === 'undefined') {
+      return this.getDefaultSettings();
+    }
+
+    try {
+      const stored = localStorage.getItem(this.getKey('user_settings'));
+      return stored ? JSON.parse(stored) : this.getDefaultSettings();
+    } catch {
+      return this.getDefaultSettings();
+    }
+  }
+
+  static saveUserSettings(settings: UserSettings): void {
+    if (typeof window === 'undefined') return;
+    
+    settings.lastActive = new Date().toISOString();
+    localStorage.setItem(
+      this.getKey('user_settings'),
+      JSON.stringify(settings)
+    );
+  }
+
+  private static getDefaultSettings(): UserSettings {
+    const now = new Date().toISOString();
+    return {
+      name: 'Algorithm Explorer',
+      avatar: '👨‍💻',
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 100,
+      totalXp: 0,
+      createdAt: now,
+      lastActive: now,
+    };
+  }
+
+  // XP and Level System
+  static awardXp(reward: XpReward): UserSettings {
+    const settings = this.getUserSettings();
+    const baseAmount = reward.amount * (reward.multiplier || 1);
+    
+    settings.xp += baseAmount;
+    settings.totalXp += baseAmount;
+
+    // Level up logic
+    while (settings.xp >= settings.xpToNextLevel) {
+      settings.xp -= settings.xpToNextLevel;
+      settings.level++;
+      settings.xpToNextLevel = this.calculateXpForNextLevel(settings.level);
+    }
+
+    this.saveUserSettings(settings);
+    return settings;
+  }
+
+  private static calculateXpForNextLevel(currentLevel: number): number {
+    // Progressive XP requirement: base 100, increases by 50 per level
+    return 100 + (currentLevel - 1) * 50;
+  }
+
+  static getXpRewards(): Record<XpReward['type'], number> {
+    return {
+      exercise: 25,
+      quiz: 15,
+      chapter: 100,
+      challenge: 200,
+    };
+  }
+
+  // Enhanced progress methods with XP rewards
+  static completeExerciseWithXp(
+    exerciseId: string,
+    exerciseProgress: Partial<ExerciseProgress>,
+    difficulty: 'easy' | 'medium' | 'hard' = 'easy'
+  ): { progress: ExerciseProgress; settings: UserSettings } {
+    this.updateExerciseProgress(exerciseId, exerciseProgress);
+    
+    if (exerciseProgress.completed) {
+      const multiplier = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 1.5 : 2;
+      const settings = this.awardXp({
+        type: 'exercise',
+        amount: this.getXpRewards().exercise,
+        multiplier
+      });
+      
+      return {
+        progress: this.getExerciseProgress(exerciseId)!,
+        settings
+      };
+    }
+
+    return {
+      progress: this.getExerciseProgress(exerciseId)!,
+      settings: this.getUserSettings()
+    };
+  }
+
+  static completeQuizWithXp(
+    quizId: string,
+    quizProgress: Partial<QuizProgress>
+  ): { progress: QuizProgress; settings: UserSettings } {
+    this.updateQuizProgress(quizId, quizProgress);
+    
+    if (quizProgress.completed) {
+      const multiplier = (quizProgress.score || 0) / 100; // Scale by score percentage
+      const settings = this.awardXp({
+        type: 'quiz',
+        amount: this.getXpRewards().quiz,
+        multiplier
+      });
+      
+      return {
+        progress: this.getQuizProgress(quizId)!,
+        settings
+      };
+    }
+
+    return {
+      progress: this.getQuizProgress(quizId)!,
+      settings: this.getUserSettings()
+    };
+  }
+
+  static completeChapterWithXp(chapterId: string): UserSettings {
+    this.markChapterCompleted(chapterId);
+    return this.awardXp({
+      type: 'chapter',
+      amount: this.getXpRewards().chapter
+    });
+  }
+
+  static completeChallengeWithXp(challengeId: string): UserSettings {
+    this.markChallengeCompleted(challengeId);
+    return this.awardXp({
+      type: 'challenge',
+      amount: this.getXpRewards().challenge
+    });
   }
 }

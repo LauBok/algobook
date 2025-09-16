@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ProgressManager } from '@/lib/utils/progress';
+import { UserSettings } from '@/lib/types';
 
 export default function Header() {
   const pathname = usePathname();
@@ -11,9 +12,11 @@ export default function Header() {
     chaptersCompleted: 0,
     exercisesCompleted: 0,
   });
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
 
   useEffect(() => {
     setStats(ProgressManager.getProgressStats());
+    setUserSettings(ProgressManager.getUserSettings());
   }, []);
 
   const navItems = [
@@ -58,18 +61,36 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Progress Indicator */}
+          {/* User Profile */}
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                <span>{stats.chaptersCompleted} chapters</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>{stats.exercisesCompleted} exercises</span>
-              </div>
-            </div>
+            {userSettings && (
+              <Link href="/settings" className="hidden md:flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="text-2xl">{userSettings.avatar}</div>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-900">{userSettings.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-blue-600 font-medium">Level {userSettings.level}</span>
+                    <div className="w-16 bg-gray-200 rounded-full h-1">
+                      <div 
+                        className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                        style={{ width: `${(userSettings.xp / userSettings.xpToNextLevel) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* Mobile User Profile */}
+            {userSettings && (
+              <Link href="/settings" className="md:hidden flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-colors">
+                <div className="text-xl">{userSettings.avatar}</div>
+                <div className="text-xs">
+                  <div className="font-medium text-gray-900">{userSettings.name}</div>
+                  <div className="text-blue-600">Lv {userSettings.level}</div>
+                </div>
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button className="md:hidden p-2 text-gray-600 hover:text-gray-900">
