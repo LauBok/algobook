@@ -185,6 +185,8 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
                       return '/challenge/stone-game';
                     case 'part2-challenge':
                       return '/challenge/mastermind';
+                    case 'part3-challenge':
+                      return '/challenge/two-stacks';
                     default:
                       return '/challenge';
                   }

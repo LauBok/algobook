@@ -535,7 +535,12 @@ export const CURRICULUM_STRUCTURE = [
       { id: "12-queues", title: "Queues: First In, First Out", order: 12 },
       { id: "13-oop-data-structures", title: "Object-Oriented Programming for Data Structures", order: 13 },
       { id: "14-linked-lists", title: "Linked Lists: Dynamic Memory Management", order: 14 },
-    ]
+    ],
+    challenge: {
+      id: "part3-challenge",
+      title: "Challenge: Two-Stacks, One Queue",
+      description: "Master stack and queue operations in this strategic token-placing game!"
+    }
   },
   {
     part: 4,

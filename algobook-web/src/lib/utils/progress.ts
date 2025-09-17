@@ -295,8 +295,9 @@ export class ProgressManager {
   private static getDefaultSettings(): UserSettings {
     const now = new Date().toISOString();
     return {
+      userId: 'local-user', // For local storage, we use a default ID
       name: 'Algorithm Explorer',
-      avatar: '👨‍💻',
+      avatar: 'developer',
       level: 1,
       xp: 0,
       xpToNextLevel: 100,

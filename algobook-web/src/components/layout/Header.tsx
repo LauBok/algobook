@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ProgressManager } from '@/lib/utils/progress';
 import { UserSettings } from '@/lib/types';
+import Avatar from '@/components/ui/Avatar';
 
 export default function Header() {
   const pathname = usePathname();
@@ -65,7 +66,7 @@ export default function Header() {
           <div className="flex items-center gap-4">
             {userSettings && (
               <Link href="/settings" className="hidden md:flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="text-2xl">{userSettings.avatar}</div>
+                <Avatar avatarId={userSettings.avatar} size="lg" />
                 <div className="text-right">
                   <div className="text-sm font-medium text-gray-900">{userSettings.name}</div>
                   <div className="flex items-center gap-2">
@@ -84,7 +85,7 @@ export default function Header() {
             {/* Mobile User Profile */}
             {userSettings && (
               <Link href="/settings" className="md:hidden flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="text-xl">{userSettings.avatar}</div>
+                <Avatar avatarId={userSettings.avatar} size="md" />
                 <div className="text-xs">
                   <div className="font-medium text-gray-900">{userSettings.name}</div>
                   <div className="text-blue-600">Lv {userSettings.level}</div>

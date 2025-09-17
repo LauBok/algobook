@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ProgressManager } from '@/lib/utils/progress';
 import { UserSettings } from '@/lib/types';
+import Avatar, { AVATAR_OPTIONS } from '@/components/ui/Avatar';
+import { BackupManager } from '@/lib/utils/backup';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -47,16 +49,14 @@ function saveSettings(settings: SimpleSettings) {
   }
 }
 
-const AVATAR_OPTIONS = [
-  '👨‍💻', '👩‍💻', '🧑‍💻', '👨‍🎓', '👩‍🎓', '🧑‍🎓', '👨‍🔬', '👩‍🔬', '🧑‍🔬', '🤖',
-  '🐱', '🐶', '🐺', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸',
-  '🐰', '🐹', '🐭', '🐷', '🐮', '🐙', '🦄', '🐲', '🐉', '🦋',
-  '🐧', '🐦', '🦅', '🦉', '🐢', '🐍', '🦎', '🐳', '🐬', '🦈'
-];
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SimpleSettings>(DEFAULT_SETTINGS);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [backupCode, setBackupCode] = useState<string>('');
+  const [restoreCode, setRestoreCode] = useState<string>('');
+  const [backupStatus, setBackupStatus] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   useEffect(() => {
     const loaded = loadSettings();
@@ -78,6 +78,107 @@ export default function SettingsPage() {
     const newUserSettings = { ...userSettings, [key]: value };
     setUserSettings(newUserSettings);
     ProgressManager.saveUserSettings(newUserSettings);
+  };
+
+  const generateBackupCode = async () => {
+    try {
+      const code = BackupManager.generateBackupCode();
+      setBackupCode(code);
+      
+      // Also generate QR code
+      const qrUrl = await BackupManager.generateBackupQRCode(code);
+      setQrCodeUrl(qrUrl);
+      
+      setBackupStatus('Backup code and QR code generated successfully!');
+    } catch (error) {
+      setBackupStatus('Failed to generate backup code.');
+    }
+  };
+
+  const copyBackupCode = async () => {
+    if (!backupCode) return;
+    
+    try {
+      await navigator.clipboard.writeText(backupCode);
+      setBackupStatus('Backup code copied to clipboard! 📋');
+      setTimeout(() => setBackupStatus(''), 3000); // Clear message after 3 seconds
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = backupCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setBackupStatus('Backup code copied to clipboard! 📋');
+      setTimeout(() => setBackupStatus(''), 3000);
+    }
+  };
+
+  const downloadBackup = () => {
+    try {
+      const code = BackupManager.downloadBackupCode();
+      setBackupCode(code); // Also show the code on screen
+      setBackupStatus('Backup code file downloaded successfully!');
+    } catch (error) {
+      setBackupStatus('Failed to download backup code.');
+    }
+  };
+
+  const downloadQRCode = async () => {
+    if (!backupCode) return;
+    
+    try {
+      await BackupManager.downloadQRCode(backupCode);
+      setBackupStatus('QR code downloaded successfully! 📱');
+      setTimeout(() => setBackupStatus(''), 3000);
+    } catch (error) {
+      setBackupStatus('Failed to download QR code.');
+    }
+  };
+
+  const restoreFromCode = () => {
+    if (!restoreCode.trim()) {
+      setBackupStatus('Please enter a backup code.');
+      return;
+    }
+
+    try {
+      const success = BackupManager.restoreFromBackupCode(restoreCode.trim());
+      if (success) {
+        // Reload user settings and progress
+        const userProfile = ProgressManager.getUserSettings();
+        setUserSettings(userProfile);
+        setBackupStatus('Progress restored successfully!');
+        setRestoreCode('');
+      } else {
+        setBackupStatus('Failed to restore progress. Invalid backup code.');
+      }
+    } catch (error) {
+      setBackupStatus('Failed to restore progress. Invalid backup code.');
+    }
+  };
+
+  const handleFileRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const success = await BackupManager.restoreFromFile(file);
+      if (success) {
+        // Reload user settings and progress
+        const userProfile = ProgressManager.getUserSettings();
+        setUserSettings(userProfile);
+        setBackupStatus('Progress restored from file successfully!');
+      } else {
+        setBackupStatus('Failed to restore from file. Invalid backup file.');
+      }
+    } catch (error) {
+      setBackupStatus('Failed to restore from file. Invalid backup file.');
+    }
+    
+    // Reset file input
+    event.target.value = '';
   };
 
   const resetToDefaults = () => {
@@ -132,7 +233,7 @@ export default function SettingsPage() {
                   {/* Profile Preview */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                     <div className="flex items-center gap-4">
-                      <div className="text-4xl">{userSettings.avatar}</div>
+                      <Avatar avatarId={userSettings.avatar} size="xl" />
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">{userSettings.name}</h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -170,22 +271,32 @@ export default function SettingsPage() {
 
                   {/* Avatar Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Avatar</label>
-                    <div className="grid grid-cols-10 gap-2">
-                      {AVATAR_OPTIONS.map((avatar) => (
-                        <button
-                          key={avatar}
-                          onClick={() => updateUserSetting('avatar', avatar)}
-                          className={`text-2xl p-2 rounded-lg border-2 transition-all hover:scale-110 ${
-                            userSettings.avatar === avatar
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          {avatar}
-                        </button>
-                      ))}
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-4">Avatar</label>
+                    
+                    {/* Categories */}
+                    {['people', 'animals', 'fantasy', 'objects'].map((category) => (
+                      <div key={category} className="mb-6">
+                        <h4 className="text-sm font-medium text-gray-600 mb-3 capitalize">{category}</h4>
+                        <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
+                          {AVATAR_OPTIONS
+                            .filter(avatar => avatar.category === category)
+                            .map((avatar) => (
+                            <button
+                              key={avatar.id}
+                              onClick={() => updateUserSetting('avatar', avatar.id)}
+                              className={`p-2 rounded-xl border-2 transition-all hover:scale-105 ${
+                                userSettings.avatar === avatar.id
+                                  ? 'border-blue-500 bg-blue-50 shadow-md'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              title={avatar.name}
+                            >
+                              <Avatar avatarId={avatar.id} size="lg" className="mx-auto" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -272,6 +383,166 @@ export default function SettingsPage() {
                   </label>
                 </div>
               </div>
+            </div>
+
+            {/* Progress Backup & Restore */}
+            <div className="border-t pt-8 mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">🔒 Backup & Restore Progress</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Save your learning progress so you can recover it if you clear your browser cache or switch devices.
+              </p>
+
+              {/* Backup Section */}
+              <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">📤 Create Backup</h3>
+                <div className="space-y-4">
+                  {/* Generate Backup Code */}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900">Generate Backup Code</div>
+                      <div className="text-sm text-gray-600">
+                        Create a backup code you can copy or download as a file.
+                      </div>
+                    </div>
+                    <button
+                      onClick={generateBackupCode}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      🔑 Generate Code
+                    </button>
+                  </div>
+
+
+                  {/* Display Backup Code */}
+                  {backupCode && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium text-gray-900">Your Backup Code:</div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={copyBackupCode}
+                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          >
+                            📋 Copy
+                          </button>
+                          <button
+                            onClick={downloadBackup}
+                            className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                          >
+                            📁 Download
+                          </button>
+                          <button
+                            onClick={downloadQRCode}
+                            className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                          >
+                            📱 QR Code
+                          </button>
+                        </div>
+                      </div>
+                      <div 
+                        className="bg-gray-100 p-3 rounded font-mono text-sm cursor-pointer hover:bg-gray-200 transition-colors max-h-20 overflow-y-auto"
+                        onClick={copyBackupCode}
+                        title="Click to copy to clipboard"
+                        style={{
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#9ca3af #e5e7eb'
+                        }}
+                      >
+                        {backupCode}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                        💾 Save this code somewhere safe! Click the code or copy button to copy to clipboard.
+                      </div>
+                      
+                      {/* QR Code Display */}
+                      {qrCodeUrl && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                              <img 
+                                src={qrCodeUrl} 
+                                alt="Backup QR Code" 
+                                className="w-32 h-32 border border-gray-300 rounded-lg bg-white p-2"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 mb-1">📱 QR Code for Mobile</div>
+                              <div className="text-sm text-gray-600 mb-3">
+                                Scan this QR code with your phone or tablet to quickly transfer your backup code to another device.
+                              </div>
+                              <button
+                                onClick={downloadQRCode}
+                                className="px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                              >
+                                💾 Save QR Code Image
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Restore Section */}
+              <div className="bg-green-50 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">📥 Restore Progress</h3>
+                <div className="space-y-4">
+                  {/* Restore from Code */}
+                  <div>
+                    <div className="font-medium text-gray-900 mb-2">Restore from Backup Code</div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={restoreCode}
+                        onChange={(e) => setRestoreCode(e.target.value)}
+                        placeholder="Enter your backup code here..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 font-mono text-sm"
+                      />
+                      <input
+                        type="file"
+                        accept=".txt"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            file.text().then(content => {
+                              setRestoreCode(content.trim());
+                            });
+                          }
+                        }}
+                        className="hidden"
+                        id="upload-code-file"
+                      />
+                      <label
+                        htmlFor="upload-code-file"
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+                        title="Upload backup code file"
+                      >
+                        📁
+                      </label>
+                      <button
+                        onClick={restoreFromCode}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                      >
+                        🔄 Restore
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Status Messages */}
+              {backupStatus && (
+                <div className={`p-4 rounded-lg ${
+                  backupStatus.includes('successfully') || backupStatus.includes('generated')
+                    ? 'bg-green-100 text-green-800 border border-green-200'
+                    : 'bg-red-100 text-red-800 border border-red-200'
+                }`}>
+                  {backupStatus}
+                </div>
+              )}
             </div>
 
             {/* Data Management */}

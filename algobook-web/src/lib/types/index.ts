@@ -105,8 +105,45 @@ export interface UserProgress {
   challengesCompleted: string[];
 }
 
+// User authentication types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar: string;
+  createdAt: string;
+  lastLoginAt: string;
+  isEmailVerified: boolean;
+}
+
+export interface UserSession {
+  user: User;
+  token: string;
+  expiresAt: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface SignupCredentials {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  name: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
+
 // User settings and profile types
 export interface UserSettings {
+  userId: string;
   name: string;
   avatar: string;
   level: number;
