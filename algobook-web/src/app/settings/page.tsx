@@ -242,26 +242,38 @@ export default function SettingsPage() {
               {userSettings && (
                 <div className="space-y-6">
                   {/* Profile Preview */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center gap-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+                    <div className="flex items-start gap-6">
                       <Avatar avatarId={userSettings.avatar} size="xl" />
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{userSettings.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                      <div className="flex-1 space-y-4">
+                        {/* Name */}
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{userSettings.name}</h3>
+                        </div>
+                        
+                        {/* Level and Total XP */}
+                        <div className="flex items-center gap-4">
+                          <span className="bg-blue-600 text-white px-3 py-1.5 rounded-full text-sm font-medium">
                             Level {userSettings.level}
                           </span>
-                          <span>{userSettings.totalXp} XP earned</span>
+                          <span className="text-sm text-gray-600 bg-white px-3 py-1.5 rounded-full border border-gray-200">
+                            {userSettings.totalXp} XP earned
+                          </span>
                         </div>
-                        <div className="mt-2">
-                          <div className="w-48 bg-gray-200 rounded-full h-2">
+                        
+                        {/* Progress Bar */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">Progress to Level {userSettings.level + 1}</span>
+                            <span className="text-sm text-gray-600">
+                              {userSettings.xp} / {userSettings.xpToNextLevel} XP
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
                             <div 
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                               style={{ width: `${(userSettings.xp / userSettings.xpToNextLevel) * 100}%` }}
                             ></div>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {userSettings.xp} / {userSettings.xpToNextLevel} XP to level {userSettings.level + 1}
                           </div>
                         </div>
                       </div>

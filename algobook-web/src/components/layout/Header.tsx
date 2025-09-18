@@ -88,14 +88,19 @@ export default function Header() {
               <Link href="/settings" className="hidden md:flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
                 <Avatar avatarId={userSettings.avatar} size="lg" />
                 <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">{userSettings.name}</div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-blue-600 font-medium">Level {userSettings.level}</span>
-                    <div className="w-16 bg-gray-200 rounded-full h-1">
+                  <div className="text-sm font-medium text-gray-900 mb-1">{userSettings.name}</div>
+                  <div className="flex flex-col items-end">
+                    <div className="w-24 bg-gray-200 rounded-full h-1.5">
                       <div 
-                        className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
                         style={{ width: `${(userSettings.xp / userSettings.xpToNextLevel) * 100}%` }}
                       ></div>
+                    </div>
+                    <div className="flex items-center justify-between w-24 mt-1">
+                      <span className="text-xs text-blue-600 font-medium">Lv {userSettings.level}</span>
+                      <span className="text-xs text-gray-500">
+                        {userSettings.xp}/{userSettings.xpToNextLevel}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -107,8 +112,21 @@ export default function Header() {
               <Link href="/settings" className="md:hidden flex items-center gap-2 p-1 rounded-lg hover:bg-gray-50 transition-colors">
                 <Avatar avatarId={userSettings.avatar} size="md" />
                 <div className="text-xs">
-                  <div className="font-medium text-gray-900">{userSettings.name}</div>
-                  <div className="text-blue-600">Lv {userSettings.level}</div>
+                  <div className="font-medium text-gray-900 mb-0.5">{userSettings.name}</div>
+                  <div className="flex flex-col">
+                    <div className="w-16 bg-gray-200 rounded-full h-1">
+                      <div 
+                        className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                        style={{ width: `${(userSettings.xp / userSettings.xpToNextLevel) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between w-16 mt-0.5">
+                      <span className="text-xs text-blue-600">Lv {userSettings.level}</span>
+                      <span className="text-xs text-gray-500">
+                        {userSettings.xp}/{userSettings.xpToNextLevel}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </Link>
             )}
