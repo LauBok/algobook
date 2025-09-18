@@ -131,15 +131,15 @@ export class BackupManager {
       const compact = JSON.parse(compressed);
       
       // Restore essential progress
-      const currentProgress = this.getUserProgress();
-      const currentSettings = this.getUserSettings();
+      const currentProgress = ProgressManager.getUserProgress();
+      const currentSettings = ProgressManager.getUserSettings();
       
       // Merge chapters and challenges
       const newChapters = [...new Set([...currentProgress.chaptersCompleted, ...(compact.p.c || [])])];
       const newChallenges = [...new Set([...currentProgress.challengesCompleted, ...(compact.p.ch || [])])];
       
       // Update progress
-      this.saveUserProgress({
+      ProgressManager.saveUserProgress({
         ...currentProgress,
         chaptersCompleted: newChapters,
         challengesCompleted: newChallenges
@@ -147,7 +147,7 @@ export class BackupManager {
       
       // Update settings if higher level/XP
       if (compact.s.l > currentSettings.level || compact.s.x > currentSettings.totalXp) {
-        this.saveUserSettings({
+        ProgressManager.saveUserSettings({
           ...currentSettings,
           level: Math.max(currentSettings.level, compact.s.l),
           totalXp: Math.max(currentSettings.totalXp, compact.s.x)
