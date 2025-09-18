@@ -5,6 +5,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import { useSettings } from '@/hooks/useSettings';
 import { settingsManager } from '@/lib/utils/settings';
+import { XpToastProvider } from '@/components/ui/XpToast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,16 +21,17 @@ export default function Layout({ children, showSidebar = true }: LayoutProps) {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${(() => {
-      try {
-        return settingsManager.getFontSizeClass();
-      } catch {
-        return 'text-base';
-      }
-    })()}`}>
-      <Header />
-      
-      <div className="flex relative">
+    <XpToastProvider>
+      <div className={`min-h-screen bg-gray-50 ${(() => {
+        try {
+          return settingsManager.getFontSizeClass();
+        } catch {
+          return 'text-base';
+        }
+      })()}`}>
+        <Header />
+        
+        <div className="flex relative">
         {/* Toggle button for when sidebar is closed */}
         {showSidebar && !sidebarOpen && (
           <button
@@ -115,7 +117,8 @@ export default function Layout({ children, showSidebar = true }: LayoutProps) {
             {children}
           </div>
         </main>
+        </div>
       </div>
-    </div>
+    </XpToastProvider>
   );
 }

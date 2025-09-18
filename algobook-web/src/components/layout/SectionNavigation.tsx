@@ -39,13 +39,14 @@ export default function SectionNavigation({ navigation }: Props) {
     console.log(`💾 Debug: sectionId=${sectionId}, totalMinutes=${totalMinutes}, threshold=0.1`);
     
     if (totalMinutes > 0.1) { // Only save if > 6 seconds
-      ProgressManager.addTimeSpent(sectionId, totalMinutes);
+      const updatedSettings = ProgressManager.addTimeSpentWithXp(sectionId, totalMinutes);
       
       console.log(`📊 Saved ${totalMinutes} minutes for section ${sectionId}`);
+      console.log(`⭐ Awarded ${Math.round(totalMinutes)} XP for study time`);
       
       // Store in sessionStorage so we can see it persisted
       const timestamp = new Date().toLocaleTimeString();
-      sessionStorage.setItem('lastTimeSave', `${timestamp}: Saved ${totalMinutes}min for ${sectionId}`);
+      sessionStorage.setItem('lastTimeSave', `${timestamp}: Saved ${totalMinutes}min for ${sectionId} (+${Math.round(totalMinutes)}XP)`);
       
       // Mark as saved to prevent double-saving
       hasSavedRef.current = true;
@@ -104,11 +105,11 @@ export default function SectionNavigation({ navigation }: Props) {
         totalTimeRef.current += now - startTimeRef.current;
       }
       
-      // Save the accumulated time
+      // Save the accumulated time with XP
       const sectionId = `${chapter.id}_${current.id}`;
-      const totalMinutes = Math.round(totalTimeRef.current / (1000 * 60 * 10)) / 10;
-      if (totalMinutes > 0) {
-        ProgressManager.addTimeSpent(sectionId, totalMinutes);
+      const totalMinutes = Math.round(totalTimeRef.current / (1000 * 60)) / 10;
+      if (totalMinutes > 0.1) {
+        ProgressManager.addTimeSpentWithXp(sectionId, totalMinutes);
       }
     };
 
@@ -137,17 +138,17 @@ export default function SectionNavigation({ navigation }: Props) {
     // Save accumulated time
     saveCurrentTime();
     
-    // Mark section as completed
-    ProgressManager.markSectionCompleted(sectionId);
+    // Mark section as completed with XP reward
+    ProgressManager.completeSectionWithXp(sectionId);
     
     // Check if all sections in chapter are completed
     const allSectionsCompleted = chapter.sections.every(section => 
       ProgressManager.isSectionCompleted(`${chapter.id}_${section.id}`)
     );
     
-    // If all sections are completed, mark chapter as completed
+    // If all sections are completed, mark chapter as completed with XP reward
     if (allSectionsCompleted) {
-      ProgressManager.markChapterCompleted(chapter.id);
+      ProgressManager.completeChapterWithXp(chapter.id);
     }
     
     // Trigger page refresh to update UI

@@ -187,10 +187,10 @@ export default function CodingExercise({
         setCompleted(true);
       }
 
-      // Update progress  
+      // Update progress with XP rewards
       const currentProgress = ProgressManager.getExerciseProgress(id);
       
-      ProgressManager.updateExerciseProgress(id, {
+      ProgressManager.completeExerciseWithXp(id, {
         attempts: newAttempts,
         completed: allPassed,
         bestScore: Math.max(
@@ -198,7 +198,7 @@ export default function CodingExercise({
           Math.round((passedCount / testCases.length) * 100)
         ),
         timeSpent: 0, // Time is now tracked at section level
-      });
+      }, difficulty);
 
     } catch (error) {
       // Don't show error if it was aborted

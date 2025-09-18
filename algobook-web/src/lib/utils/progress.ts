@@ -2,6 +2,13 @@
 
 import { UserProgress, ExerciseProgress, QuizProgress, UserSettings, XpReward } from '@/lib/types';
 
+// Global toast notification function (will be set by components)
+let globalShowXpToast: ((amount: number, type: 'quiz' | 'exercise' | 'section' | 'chapter' | 'challenge' | 'time', message?: string) => void) | null = null;
+
+export const setGlobalXpToastFunction = (fn: typeof globalShowXpToast) => {
+  globalShowXpToast = fn;
+};
+
 const STORAGE_PREFIX = 'algobook_';
 
 export class ProgressManager {
@@ -56,13 +63,22 @@ export class ProgressManager {
     return this.getUserProgress().chaptersCompleted.includes(chapterId);
   }
 
-  // Section progress
+  // Section progress with XP
   static markSectionCompleted(sectionId: string): void {
     const progress = this.getUserProgress();
     if (!progress.sectionsCompleted.includes(sectionId)) {
       progress.sectionsCompleted.push(sectionId);
       this.saveUserProgress(progress);
     }
+  }
+
+  // Section completion with XP reward
+  static completeSectionWithXp(sectionId: string): UserSettings {
+    this.markSectionCompleted(sectionId);
+    return this.awardXp({
+      type: 'time', // Use 'time' type for sections since no 'section' type exists
+      amount: this.getSectionXp()
+    });
   }
 
   static isSectionCompleted(sectionId: string): boolean {
@@ -139,11 +155,33 @@ export class ProgressManager {
     return this.getUserProgress().quizzesCompleted[quizId] || null;
   }
 
-  // Time tracking
+  // Time tracking with XP rewards
   static addTimeSpent(sectionId: string, minutes: number): void {
     const progress = this.getUserProgress();
     progress.timeSpent[sectionId] = (progress.timeSpent[sectionId] || 0) + minutes;
     this.saveUserProgress(progress);
+  }
+
+  // Award XP for time spent (separate method that can be called independently)
+  static awardTimeXp(minutes: number): UserSettings {
+    const xp = Math.round(minutes * this.getXpRewards().time);
+    return this.awardXp({
+      type: 'time',
+      amount: xp
+    });
+  }
+
+  // Enhanced time tracking that also awards XP
+  static addTimeSpentWithXp(sectionId: string, minutes: number): UserSettings {
+    // Add time to progress
+    this.addTimeSpent(sectionId, minutes);
+    
+    // Award XP for the time spent (only if significant time > 0.1 minutes)
+    if (minutes > 0.1) {
+      return this.awardTimeXp(minutes);
+    }
+    
+    return this.getUserSettings();
   }
 
   // Reset functions for granular control
@@ -308,7 +346,7 @@ export class ProgressManager {
   }
 
   // XP and Level System
-  static awardXp(reward: XpReward): UserSettings {
+  static awardXp(reward: XpReward, showToast: boolean = true): UserSettings {
     const settings = this.getUserSettings();
     const baseAmount = reward.amount * (reward.multiplier || 1);
     
@@ -316,13 +354,25 @@ export class ProgressManager {
     settings.totalXp += baseAmount;
 
     // Level up logic
+    let leveledUp = false;
     while (settings.xp >= settings.xpToNextLevel) {
       settings.xp -= settings.xpToNextLevel;
       settings.level++;
       settings.xpToNextLevel = this.calculateXpForNextLevel(settings.level);
+      leveledUp = true;
     }
 
     this.saveUserSettings(settings);
+    
+    // Show toast notification if enabled and function is available
+    if (showToast && globalShowXpToast) {
+      if (leveledUp) {
+        globalShowXpToast(baseAmount, reward.type, `Level up! Now level ${settings.level}`);
+      } else {
+        globalShowXpToast(baseAmount, reward.type);
+      }
+    }
+    
     return settings;
   }
 
@@ -333,11 +383,31 @@ export class ProgressManager {
 
   static getXpRewards(): Record<XpReward['type'], number> {
     return {
-      exercise: 25,
-      quiz: 15,
-      chapter: 100,
-      challenge: 200,
+      exercise: 20, // 20 XP only if all test cases pass
+      quiz: 5, // 5 XP for completion, regardless of score
+      chapter: 50, // 50 XP for completing all sections in a chapter
+      challenge: 150, // Base challenge reward (part1-challenge)
+      time: 0.2, // 1 XP per 5 minutes (0.2 XP per minute)
     };
+  }
+
+  // Get challenge-specific XP rewards
+  static getChallengeXp(challengeId: string): number {
+    switch (challengeId) {
+      case 'part1-challenge':
+        return 150;
+      case 'part2-challenge':
+        return 250;
+      case 'part3-challenge':
+        return this.getXpRewards().challenge; // Default to base if more challenges added
+      default:
+        return this.getXpRewards().challenge;
+    }
+  }
+
+  // Section completion XP (new reward type)
+  static getSectionXp(): number {
+    return 10; // 10 XP for completing each section
   }
 
   // Enhanced progress methods with XP rewards
@@ -348,12 +418,11 @@ export class ProgressManager {
   ): { progress: ExerciseProgress; settings: UserSettings } {
     this.updateExerciseProgress(exerciseId, exerciseProgress);
     
-    if (exerciseProgress.completed) {
-      const multiplier = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 1.5 : 2;
+    // Only award XP if exercise is fully completed (all test cases pass)
+    if (exerciseProgress.completed && exerciseProgress.bestScore === 100) {
       const settings = this.awardXp({
         type: 'exercise',
-        amount: this.getXpRewards().exercise,
-        multiplier
+        amount: this.getXpRewards().exercise
       });
       
       return {
@@ -375,11 +444,10 @@ export class ProgressManager {
     this.updateQuizProgress(quizId, quizProgress);
     
     if (quizProgress.completed) {
-      const multiplier = (quizProgress.score || 0) / 100; // Scale by score percentage
+      // Award fixed 5 XP regardless of score
       const settings = this.awardXp({
         type: 'quiz',
-        amount: this.getXpRewards().quiz,
-        multiplier
+        amount: this.getXpRewards().quiz
       });
       
       return {
@@ -406,7 +474,136 @@ export class ProgressManager {
     this.markChallengeCompleted(challengeId);
     return this.awardXp({
       type: 'challenge',
-      amount: this.getXpRewards().challenge
+      amount: this.getChallengeXp(challengeId)
     });
+  }
+
+  // XP Reimbursement System - Calculate and award XP for existing progress
+  static calculateAndAwardRetroactiveXp(): {
+    totalXpAwarded: number;
+    breakdown: {
+      quizzes: number;
+      exercises: number;
+      chapters: number;
+      challenges: number;
+      sections: number;
+      time: number;
+    };
+    details: string[];
+  } {
+    const progress = this.getUserProgress();
+    const settings = this.getUserSettings();
+    const rewards = this.getXpRewards();
+    let totalXpAwarded = 0;
+    const breakdown = { quizzes: 0, exercises: 0, chapters: 0, challenges: 0, sections: 0, time: 0 };
+    const details: string[] = [];
+
+    // Award XP for completed quizzes (5 XP each, regardless of score)
+    Object.entries(progress.quizzesCompleted).forEach(([quizId, quizProgress]) => {
+      if (quizProgress.completed) {
+        const xp = rewards.quiz; // Fixed 5 XP
+        totalXpAwarded += xp;
+        breakdown.quizzes += xp;
+        details.push(`Quiz ${quizId}: ${xp} XP (completed)`);
+      }
+    });
+
+    // Award XP for completed exercises (20 XP only if 100% score)
+    Object.entries(progress.exercisesCompleted).forEach(([exerciseId, exerciseProgress]) => {
+      if (exerciseProgress.completed && exerciseProgress.bestScore === 100) {
+        const xp = rewards.exercise; // Fixed 20 XP for perfect completion
+        totalXpAwarded += xp;
+        breakdown.exercises += xp;
+        details.push(`Exercise ${exerciseId}: ${xp} XP (100% complete)`);
+      }
+    });
+
+    // Award XP for completed chapters
+    progress.chaptersCompleted.forEach(chapterId => {
+      const xp = rewards.chapter;
+      totalXpAwarded += xp;
+      breakdown.chapters += xp;
+      details.push(`Chapter ${chapterId}: ${xp} XP`);
+    });
+
+    // Award XP for completed sections
+    progress.sectionsCompleted.forEach(sectionId => {
+      const xp = this.getSectionXp();
+      totalXpAwarded += xp;
+      breakdown.sections += xp;
+      details.push(`Section ${sectionId}: ${xp} XP`);
+    });
+
+    // Award XP for completed challenges (challenge-specific amounts)
+    (progress.challengesCompleted || []).forEach(challengeId => {
+      const xp = this.getChallengeXp(challengeId);
+      totalXpAwarded += xp;
+      breakdown.challenges += xp;
+      details.push(`Challenge ${challengeId}: ${xp} XP`);
+    });
+
+    // Award XP for time spent studying
+    const totalTimeSpent = Object.values(progress.timeSpent).reduce((sum, time) => sum + time, 0);
+    if (totalTimeSpent > 0) {
+      const timeXp = Math.round(totalTimeSpent * rewards.time);
+      totalXpAwarded += timeXp;
+      breakdown.time += timeXp;
+      details.push(`Study time: ${timeXp} XP (${Math.round(totalTimeSpent)} minutes)`);
+    }
+
+    // Award the total XP (without toasts for bulk retroactive operation)
+    if (totalXpAwarded > 0) {
+      settings.xp += totalXpAwarded;
+      settings.totalXp += totalXpAwarded;
+
+      // Level up logic
+      while (settings.xp >= settings.xpToNextLevel) {
+        settings.xp -= settings.xpToNextLevel;
+        settings.level++;
+        settings.xpToNextLevel = this.calculateXpForNextLevel(settings.level);
+        details.push(`🎉 Level up! Now level ${settings.level}`);
+      }
+
+      this.saveUserSettings(settings);
+    }
+
+    return {
+      totalXpAwarded,
+      breakdown,
+      details
+    };
+  }
+
+  // Check if retroactive XP has been awarded (to prevent double-awarding)
+  static hasRetroactiveXpBeenAwarded(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(this.getKey('retroactive_xp_awarded')) === 'true';
+  }
+
+  // Mark retroactive XP as awarded
+  static markRetroactiveXpAsAwarded(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(this.getKey('retroactive_xp_awarded'), 'true');
+  }
+
+  // Reset retroactive XP flag (for testing new XP values)
+  static resetRetroactiveXpFlag(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(this.getKey('retroactive_xp_awarded'));
+  }
+
+  // Auto-run retroactive XP calculation if not done yet
+  static ensureRetroactiveXpAwarded(): {
+    wasAwarded: boolean;
+    result?: ReturnType<typeof ProgressManager.calculateAndAwardRetroactiveXp>;
+  } {
+    if (this.hasRetroactiveXpBeenAwarded()) {
+      return { wasAwarded: false };
+    }
+
+    const result = this.calculateAndAwardRetroactiveXp();
+    this.markRetroactiveXpAsAwarded();
+    
+    return { wasAwarded: true, result };
   }
 }

@@ -155,7 +155,7 @@ export interface UserSettings {
 }
 
 export interface XpReward {
-  type: 'exercise' | 'quiz' | 'chapter' | 'challenge';
+  type: 'exercise' | 'quiz' | 'chapter' | 'challenge' | 'time';
   amount: number;
   multiplier?: number; // Based on difficulty or performance
 }

@@ -233,7 +233,7 @@ def next_guess():
   // Mark challenge as completed when 10 consecutive optimal solves achieved
   useEffect(() => {
     if (challengeState.consecutiveOptimalSolves >= 10) {
-      ProgressManager.markChallengeCompleted('part2-challenge');
+      ProgressManager.completeChallengeWithXp('part2-challenge');
     }
   }, [challengeState.consecutiveOptimalSolves]);
 

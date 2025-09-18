@@ -58,8 +58,8 @@ export default function ImageCropper({ onCropComplete, onCancel }: ImageCropperP
     if (!isDragging || !cropperRef.current) return;
 
     const rect = cropperRef.current.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(event.clientX - dragStart.x - rect.left, imageSize.width - crop.size));
-    const newY = Math.max(0, Math.min(event.clientY - dragStart.y - rect.top, imageSize.height - crop.size));
+    const newX = Math.max(0, Math.min(event.clientX - dragStart.x, imageSize.width - crop.size));
+    const newY = Math.max(0, Math.min(event.clientY - dragStart.y, imageSize.height - crop.size));
 
     setCrop(prev => ({ ...prev, x: newX, y: newY }));
   }, [isDragging, dragStart, imageSize, crop.size]);

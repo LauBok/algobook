@@ -96,7 +96,7 @@ export default function MultipleChoice({
     const selectedCorrect = selectedOption === correctOption?.id;
     setIsCorrect(selectedCorrect);
 
-    ProgressManager.updateQuizProgress(id, {
+    ProgressManager.completeQuizWithXp(id, {
       completed: true,
       score: selectedCorrect ? 100 : 0,
       attempts: newAttempts,

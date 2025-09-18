@@ -14,8 +14,28 @@ export default function Header() {
     exercisesCompleted: 0,
   });
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [showXpReimbursement, setShowXpReimbursement] = useState(false);
+  const [xpReimbursementData, setXpReimbursementData] = useState<{
+    totalXpAwarded: number;
+    breakdown: { quizzes: number; exercises: number; chapters: number; challenges: number; sections: number; time: number; };
+    details: string[];
+  } | null>(null);
 
   useEffect(() => {
+    // Check and award retroactive XP for existing progress
+    const retroactiveResult = ProgressManager.ensureRetroactiveXpAwarded();
+    if (retroactiveResult.wasAwarded && retroactiveResult.result) {
+      console.log('🎉 Retroactive XP awarded!', retroactiveResult.result);
+      if (retroactiveResult.result.totalXpAwarded > 0) {
+        // Show user notification about XP reimbursement
+        setXpReimbursementData(retroactiveResult.result);
+        setShowXpReimbursement(true);
+        console.log(`Total XP reimbursed: ${retroactiveResult.result.totalXpAwarded}`);
+        console.log('Breakdown:', retroactiveResult.result.breakdown);
+        console.log('Details:', retroactiveResult.result.details);
+      }
+    }
+
     setStats(ProgressManager.getProgressStats());
     setUserSettings(ProgressManager.getUserSettings());
   }, []);
@@ -96,6 +116,58 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* XP Reimbursement Notification */}
+      {showXpReimbursement && xpReimbursementData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🎉</div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">XP Reimbursement!</h2>
+              <p className="text-gray-600 mb-4">
+                We've awarded you XP for all your previous progress!
+              </p>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="text-2xl font-bold text-blue-800 mb-2">
+                  +{xpReimbursementData.totalXpAwarded} XP
+                </div>
+                <div className="text-sm text-blue-700 space-y-1">
+                  {xpReimbursementData.breakdown.quizzes > 0 && (
+                    <div>Quizzes: {xpReimbursementData.breakdown.quizzes} XP</div>
+                  )}
+                  {xpReimbursementData.breakdown.exercises > 0 && (
+                    <div>Exercises: {xpReimbursementData.breakdown.exercises} XP</div>
+                  )}
+                  {xpReimbursementData.breakdown.sections > 0 && (
+                    <div>Sections: {xpReimbursementData.breakdown.sections} XP</div>
+                  )}
+                  {xpReimbursementData.breakdown.chapters > 0 && (
+                    <div>Chapters: {xpReimbursementData.breakdown.chapters} XP</div>
+                  )}
+                  {xpReimbursementData.breakdown.challenges > 0 && (
+                    <div>Challenges: {xpReimbursementData.breakdown.challenges} XP</div>
+                  )}
+                  {xpReimbursementData.breakdown.time > 0 && (
+                    <div>Study Time: {xpReimbursementData.breakdown.time} XP</div>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-500 mb-4">
+                From now on, you'll earn XP automatically for completing activities and studying!
+              </p>
+
+              <button
+                onClick={() => setShowXpReimbursement(false)}
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Awesome! 
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

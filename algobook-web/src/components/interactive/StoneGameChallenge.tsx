@@ -111,7 +111,7 @@ def make_move(remaining_stones):
   // Mark challenge as completed when 5 consecutive wins achieved
   useEffect(() => {
     if (challengeState.consecutiveWins === 5) {
-      ProgressManager.markChallengeCompleted('part1-challenge');
+      ProgressManager.completeChallengeWithXp('part1-challenge');
     }
   }, [challengeState.consecutiveWins]);
 
