@@ -11,7 +11,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen = true }: SidebarProps) {
+export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [isClient, setIsClient] = React.useState(false);
 
@@ -61,10 +61,8 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
     return availableChapters.has(chapterId);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="w-80 bg-white border-r border-gray-200 h-screen overflow-y-auto">
+    <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
       {/* Sidebar Header */}
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">Table of Contents</h2>

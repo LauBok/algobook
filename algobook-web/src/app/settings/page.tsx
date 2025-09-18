@@ -5,6 +5,7 @@ import { ProgressManager } from '@/lib/utils/progress';
 import { UserSettings } from '@/lib/types';
 import Avatar, { AVATAR_OPTIONS } from '@/components/ui/Avatar';
 import { BackupManager } from '@/lib/utils/backup';
+import ImageCropper from '@/components/ui/ImageCropper';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -57,6 +58,7 @@ export default function SettingsPage() {
   const [restoreCode, setRestoreCode] = useState<string>('');
   const [backupStatus, setBackupStatus] = useState<string>('');
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [showImageCropper, setShowImageCropper] = useState<boolean>(false);
 
   useEffect(() => {
     const loaded = loadSettings();
@@ -181,6 +183,15 @@ export default function SettingsPage() {
     event.target.value = '';
   };
 
+  const handleCustomAvatarComplete = (croppedImageDataUrl: string) => {
+    updateUserSetting('avatar', croppedImageDataUrl);
+    setShowImageCropper(false);
+  };
+
+  const handleCustomAvatarCancel = () => {
+    setShowImageCropper(false);
+  };
+
   const resetToDefaults = () => {
     if (confirm('Are you sure you want to reset all settings to their default values?')) {
       setSettings(DEFAULT_SETTINGS);
@@ -273,6 +284,34 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-4">Avatar</label>
                     
+                    {/* Custom Avatar Option */}
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-gray-600 mb-3">Custom</h4>
+                      <div className="grid grid-cols-6 sm:grid-cols-8 gap-3">
+                        {/* Current custom avatar if set */}
+                        {userSettings.avatar.startsWith('data:image/') && (
+                          <button
+                            onClick={() => setShowImageCropper(true)}
+                            className="p-2 rounded-xl border-2 border-blue-500 bg-blue-50 shadow-md transition-all hover:scale-105"
+                            title="Current custom avatar (click to change)"
+                          >
+                            <Avatar avatarId={userSettings.avatar} size="lg" className="mx-auto" />
+                          </button>
+                        )}
+                        
+                        {/* Upload new custom avatar button */}
+                        <button
+                          onClick={() => setShowImageCropper(true)}
+                          className="p-2 rounded-xl border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all hover:scale-105 flex items-center justify-center"
+                          title="Upload custom avatar"
+                        >
+                          <div className="w-12 h-12 flex items-center justify-center text-gray-400 text-2xl">
+                            📸
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Categories */}
                     {['people', 'animals', 'fantasy', 'objects'].map((category) => (
                       <div key={category} className="mb-6">
@@ -590,6 +629,14 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Image Cropper Modal */}
+      {showImageCropper && (
+        <ImageCropper
+          onCropComplete={handleCustomAvatarComplete}
+          onCancel={handleCustomAvatarCancel}
+        />
+      )}
     </div>
   );
 }

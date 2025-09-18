@@ -43,17 +43,6 @@ export default function ChallengesPage() {
       href: '/challenge/mastermind',
       completed: ProgressManager.isChallengeCompleted('part2-challenge'),
       icon: '🧠'
-    },
-    {
-      id: 'two-stacks',
-      title: 'Two-Stacks Challenge',
-      description: 'Master stack and queue operations in this strategic token-placing game. Apply data structure knowledge to build a winning algorithm.',
-      difficulty: 'Intermediate',
-      estimatedTime: '40-55 minutes',
-      topics: ['Stacks', 'Queues', 'Game Strategy', 'Data Structures'],
-      href: '/challenge/two-stacks',
-      completed: ProgressManager.isChallengeCompleted('part3-challenge'),
-      icon: '🎯'
     }
   ];
 

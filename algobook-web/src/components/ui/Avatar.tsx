@@ -3,10 +3,11 @@ import React from 'react';
 export interface AvatarOption {
   id: string;
   name: string;
-  category: 'people' | 'animals' | 'fantasy' | 'objects';
+  category: 'people' | 'animals' | 'fantasy' | 'objects' | 'custom';
   emoji?: string;
   gradient?: string;
   icon?: React.ReactNode;
+  customImageUrl?: string;
 }
 
 // Apple-style subtle gradient backgrounds
@@ -159,6 +160,20 @@ interface AvatarProps {
 }
 
 export default function Avatar({ avatarId, size = 'md', className = '', showBackground = true }: AvatarProps) {
+  // Check if it's a custom avatar (data URL)
+  if (avatarId.startsWith('data:image/') || avatarId.startsWith('custom:')) {
+    const imageUrl = avatarId.startsWith('custom:') ? avatarId.slice(7) : avatarId;
+    return (
+      <div className={`${getSizeClasses(size)} rounded-full overflow-hidden ${className}`}>
+        <img
+          src={imageUrl}
+          alt="Custom avatar"
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
   const avatar = AVATAR_OPTIONS.find(a => a.id === avatarId);
   
   if (!avatar) {
@@ -169,6 +184,19 @@ export default function Avatar({ avatarId, size = 'md', className = '', showBack
         <span className={`${getEmojiSize(size)} ${showBackground ? 'drop-shadow-sm' : ''}`}>
           {defaultAvatar.emoji}
         </span>
+      </div>
+    );
+  }
+
+  // Handle custom avatars with stored URLs
+  if (avatar.customImageUrl) {
+    return (
+      <div className={`${getSizeClasses(size)} rounded-full overflow-hidden ${className}`}>
+        <img
+          src={avatar.customImageUrl}
+          alt={avatar.name}
+          className="w-full h-full object-cover"
+        />
       </div>
     );
   }
