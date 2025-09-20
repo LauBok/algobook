@@ -278,7 +278,12 @@ export class BackupManager {
         e: this.compressExercises(backup.userProgress.exercisesCompleted),
         q: this.compressQuizzes(backup.userProgress.quizzesCompleted),
         ch: backup.userProgress.challengesCompleted || [],
-        t: this.compressTimeSpent(backup.userProgress.timeSpent)
+        t: this.compressTimeSpent(backup.userProgress.timeSpent),
+        xp: backup.userProgress.xpAwarded || {
+          sections: [],
+          chapters: [],
+          challenges: []
+        }
       }
     };
     return JSON.stringify(simplified);
@@ -352,7 +357,12 @@ export class BackupManager {
           exercisesCompleted: this.decompressExercises(simplified.p.e || {}),
           quizzesCompleted: this.decompressQuizzes(simplified.p.q || {}),
           challengesCompleted: simplified.p.ch || [],
-          timeSpent: simplified.p.t || {}
+          timeSpent: simplified.p.t || {},
+          xpAwarded: simplified.p.xp || {
+            sections: [],
+            chapters: [],
+            challenges: []
+          }
         },
         metadata: {
           deviceInfo: 'Restored from backup code',
