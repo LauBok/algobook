@@ -64,6 +64,7 @@ export default function CodingExercise({
   const [showSolution, setShowSolution] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [bestScore, setBestScore] = useState(0);
   const [editorHeight, setEditorHeight] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [mode, setMode] = useState<'practice' | 'submit'>('practice');
@@ -81,6 +82,7 @@ export default function CodingExercise({
     if (progress) {
       setAttempts(progress.attempts);
       setCompleted(progress.completed);
+      setBestScore(progress.bestScore);
     }
   }, [id]);
 
@@ -189,16 +191,21 @@ export default function CodingExercise({
 
       // Update progress with XP rewards
       const currentProgress = ProgressManager.getExerciseProgress(id);
+      const newScore = Math.round((passedCount / testCases.length) * 100);
+      const newBestScore = Math.max(
+        currentProgress?.bestScore || 0,
+        newScore
+      );
       
       ProgressManager.completeExerciseWithXp(id, {
         attempts: newAttempts,
         completed: allPassed,
-        bestScore: Math.max(
-          currentProgress?.bestScore || 0,
-          Math.round((passedCount / testCases.length) * 100)
-        ),
+        bestScore: newBestScore,
         timeSpent: 0, // Time is now tracked at section level
       }, difficulty);
+      
+      // Update local state with new best score
+      setBestScore(newBestScore);
 
     } catch (error) {
       // Don't show error if it was aborted
@@ -340,7 +347,7 @@ export default function CodingExercise({
         
         {attempts > 0 && (
           <div className="mt-3 text-sm text-gray-600">
-            Attempts: {attempts} | Best Score: {Math.round(successRate)}%
+            Attempts: {attempts} | Best Score: {bestScore}%
           </div>
         )}
       </div>

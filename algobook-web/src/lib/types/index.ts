@@ -103,6 +103,11 @@ export interface UserProgress {
   quizzesCompleted: Record<string, QuizProgress>;
   timeSpent: Record<string, number>; // section id -> minutes
   challengesCompleted: string[];
+  xpAwarded: {
+    sections: string[]; // section IDs that have been awarded XP
+    chapters: string[]; // chapter IDs that have been awarded XP  
+    challenges: string[]; // challenge IDs that have been awarded XP
+  };
 }
 
 // User authentication types
@@ -166,6 +171,7 @@ export interface ExerciseProgress {
   bestScore: number;
   timeSpent: number;
   lastAttempt: string; // ISO timestamp
+  xpAwarded?: boolean; // Track if XP has been awarded to prevent farming
 }
 
 export interface QuizProgress {
@@ -174,6 +180,7 @@ export interface QuizProgress {
   attempts: number;
   timeSpent?: number; // minutes
   lastAttempt: string; // ISO timestamp
+  xpAwarded?: boolean; // Track if XP has been awarded to prevent farming
 }
 
 // Navigation types

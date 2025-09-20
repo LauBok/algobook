@@ -130,3 +130,24 @@ body {
 .prose h6 code {
   font-size: 0.8rem !important; /* 80% of h6 font-size (1rem) */
 }
+
+/* Blockquote styling */
+.prose blockquote {
+  border-left: 4px solid #3b82f6 !important; /* blue-500 border */
+  background-color: #f8fafc !important; /* slate-50 background */
+  margin: 1.5rem 0 !important;
+  padding: 1rem 1.5rem !important;
+  color: #475569 !important; /* slate-600 text */
+  font-style: normal;
+  font-family: 'Georgia', 'Times New Roman', serif !important;
+  border-radius: 0 0.375rem 0.375rem 0; /* rounded-r-md */
+}
+
+.prose blockquote p {
+  color: #475569 !important; /* slate-600 text */
+  margin-bottom: 0.5rem !important;
+}
+
+.prose blockquote p:last-child {
+  margin-bottom: 0 !important;
+}

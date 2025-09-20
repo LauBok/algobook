@@ -9,6 +9,27 @@ export const setGlobalXpToastFunction = (fn: typeof globalShowXpToast) => {
   globalShowXpToast = fn;
 };
 
+// Event system for user settings changes
+type UserSettingsListener = (settings: UserSettings) => void;
+let userSettingsListeners: UserSettingsListener[] = [];
+
+export const addUserSettingsListener = (listener: UserSettingsListener) => {
+  userSettingsListeners.push(listener);
+  return () => {
+    userSettingsListeners = userSettingsListeners.filter(l => l !== listener);
+  };
+};
+
+const notifyUserSettingsListeners = (settings: UserSettings) => {
+  userSettingsListeners.forEach(listener => {
+    try {
+      listener(settings);
+    } catch (error) {
+      console.error('Error in user settings listener:', error);
+    }
+  });
+};
+
 const STORAGE_PREFIX = 'algobook_';
 
 export class ProgressManager {
@@ -24,7 +45,19 @@ export class ProgressManager {
 
     try {
       const stored = localStorage.getItem(this.getKey('user_progress'));
-      return stored ? JSON.parse(stored) : this.getDefaultProgress();
+      if (!stored) {
+        return this.getDefaultProgress();
+      }
+      
+      const progress = JSON.parse(stored) as UserProgress;
+      
+      // Migration: Add xpAwarded field for existing users
+      if (!progress.xpAwarded) {
+        progress.xpAwarded = { sections: [], chapters: [], challenges: [] };
+        this.saveUserProgress(progress); // Save the migrated data
+      }
+      
+      return progress;
     } catch {
       return this.getDefaultProgress();
     }
@@ -47,6 +80,11 @@ export class ProgressManager {
       quizzesCompleted: {},
       timeSpent: {},
       challengesCompleted: [],
+      xpAwarded: {
+        sections: [],
+        chapters: [],
+        challenges: []
+      }
     };
   }
 
@@ -74,11 +112,29 @@ export class ProgressManager {
 
   // Section completion with XP reward
   static completeSectionWithXp(sectionId: string): UserSettings {
+    const progress = this.getUserProgress();
+    
+    // Check if XP was already awarded for this section
+    const xpAlreadyAwarded = progress.xpAwarded?.sections?.includes(sectionId) || false;
+    
     this.markSectionCompleted(sectionId);
-    return this.awardXp({
-      type: 'time', // Use 'time' type for sections since no 'section' type exists
-      amount: this.getSectionXp()
-    });
+    
+    // Only award XP if not already awarded
+    if (!xpAlreadyAwarded) {
+      // Mark XP as awarded
+      if (!progress.xpAwarded) {
+        progress.xpAwarded = { sections: [], chapters: [], challenges: [] };
+      }
+      progress.xpAwarded.sections.push(sectionId);
+      this.saveUserProgress(progress);
+      
+      return this.awardXp({
+        type: 'time', // Use 'time' type for sections since no 'section' type exists
+        amount: this.getSectionXp()
+      });
+    }
+    
+    return this.getUserSettings();
   }
 
   static isSectionCompleted(sectionId: string): boolean {
@@ -328,6 +384,9 @@ export class ProgressManager {
       this.getKey('user_settings'),
       JSON.stringify(settings)
     );
+    
+    // Notify all listeners about the settings change
+    notifyUserSettingsListeners(settings);
   }
 
   private static getDefaultSettings(): UserSettings {
@@ -416,10 +475,19 @@ export class ProgressManager {
     exerciseProgress: Partial<ExerciseProgress>,
     difficulty: 'easy' | 'medium' | 'hard' = 'easy'
   ): { progress: ExerciseProgress; settings: UserSettings } {
+    // Check if XP was already awarded for this exercise
+    const currentProgress = this.getExerciseProgress(exerciseId);
+    const xpAlreadyAwarded = currentProgress?.xpAwarded || false;
+    
+    // Mark XP as awarded if completing for the first time with perfect score
+    if (exerciseProgress.completed && exerciseProgress.bestScore === 100 && !xpAlreadyAwarded) {
+      exerciseProgress.xpAwarded = true;
+    }
+    
     this.updateExerciseProgress(exerciseId, exerciseProgress);
     
-    // Only award XP if exercise is fully completed (all test cases pass)
-    if (exerciseProgress.completed && exerciseProgress.bestScore === 100) {
+    // Only award XP if exercise is fully completed (all test cases pass) AND XP hasn't been awarded before
+    if (exerciseProgress.completed && exerciseProgress.bestScore === 100 && !xpAlreadyAwarded) {
       const settings = this.awardXp({
         type: 'exercise',
         amount: this.getXpRewards().exercise
@@ -441,9 +509,19 @@ export class ProgressManager {
     quizId: string,
     quizProgress: Partial<QuizProgress>
   ): { progress: QuizProgress; settings: UserSettings } {
+    // Check if XP was already awarded for this quiz
+    const currentProgress = this.getQuizProgress(quizId);
+    const xpAlreadyAwarded = currentProgress?.xpAwarded || false;
+    
+    // Mark XP as awarded if completing for the first time
+    if (quizProgress.completed && !xpAlreadyAwarded) {
+      quizProgress.xpAwarded = true;
+    }
+    
     this.updateQuizProgress(quizId, quizProgress);
     
-    if (quizProgress.completed) {
+    // Only award XP if quiz is completed and XP hasn't been awarded before
+    if (quizProgress.completed && !xpAlreadyAwarded) {
       // Award fixed 5 XP regardless of score
       const settings = this.awardXp({
         type: 'quiz',
@@ -463,19 +541,55 @@ export class ProgressManager {
   }
 
   static completeChapterWithXp(chapterId: string): UserSettings {
+    const progress = this.getUserProgress();
+    
+    // Check if XP was already awarded for this chapter
+    const xpAlreadyAwarded = progress.xpAwarded?.chapters?.includes(chapterId) || false;
+    
     this.markChapterCompleted(chapterId);
-    return this.awardXp({
-      type: 'chapter',
-      amount: this.getXpRewards().chapter
-    });
+    
+    // Only award XP if not already awarded
+    if (!xpAlreadyAwarded) {
+      // Mark XP as awarded
+      if (!progress.xpAwarded) {
+        progress.xpAwarded = { sections: [], chapters: [], challenges: [] };
+      }
+      progress.xpAwarded.chapters.push(chapterId);
+      this.saveUserProgress(progress);
+      
+      return this.awardXp({
+        type: 'chapter',
+        amount: this.getXpRewards().chapter
+      });
+    }
+    
+    return this.getUserSettings();
   }
 
   static completeChallengeWithXp(challengeId: string): UserSettings {
+    const progress = this.getUserProgress();
+    
+    // Check if XP was already awarded for this challenge
+    const xpAlreadyAwarded = progress.xpAwarded?.challenges?.includes(challengeId) || false;
+    
     this.markChallengeCompleted(challengeId);
-    return this.awardXp({
-      type: 'challenge',
-      amount: this.getChallengeXp(challengeId)
-    });
+    
+    // Only award XP if not already awarded
+    if (!xpAlreadyAwarded) {
+      // Mark XP as awarded
+      if (!progress.xpAwarded) {
+        progress.xpAwarded = { sections: [], chapters: [], challenges: [] };
+      }
+      progress.xpAwarded.challenges.push(challengeId);
+      this.saveUserProgress(progress);
+      
+      return this.awardXp({
+        type: 'challenge',
+        amount: this.getChallengeXp(challengeId)
+      });
+    }
+    
+    return this.getUserSettings();
   }
 
   // XP Reimbursement System - Calculate and award XP for existing progress

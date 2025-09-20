@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ProgressManager } from '@/lib/utils/progress';
+import { ProgressManager, addUserSettingsListener } from '@/lib/utils/progress';
 import { UserSettings } from '@/lib/types';
 import Avatar from '@/components/ui/Avatar';
 
@@ -38,6 +38,17 @@ export default function Header() {
 
     setStats(ProgressManager.getProgressStats());
     setUserSettings(ProgressManager.getUserSettings());
+  }, []);
+
+  // Listen for user settings changes (XP updates)
+  useEffect(() => {
+    const unsubscribe = addUserSettingsListener((newSettings) => {
+      setUserSettings(newSettings);
+      // Also update stats when settings change
+      setStats(ProgressManager.getProgressStats());
+    });
+
+    return unsubscribe;
   }, []);
 
   const navItems = [

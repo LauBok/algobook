@@ -562,7 +562,7 @@ export default function CodePlayground({
                     <div className="text-gray-500">Terminal ready. Click &ldquo;Run Code&rdquo; to start...</div>
                   ) : (
                     terminalHistory.map((entry, index) => (
-                      <div key={index} className={`mb-1 ${
+                      <div key={index} className={`mb-1 whitespace-pre-wrap ${
                         entry.type === 'input' ? 'text-yellow-300' : 
                         entry.type === 'prompt' ? 'text-blue-300' : 
                         entry.type === 'system' ? 'text-gray-400 italic' : 'text-green-400'

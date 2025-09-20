@@ -163,7 +163,7 @@ function XpToastItem({ notification, onRemove }: XpToastItemProps) {
         transform transition-all duration-300 ease-in-out
         ${isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${isLeaving ? 'scale-95' : 'scale-100'}
-        bg-white border-2 rounded-lg shadow-lg p-4 min-w-[280px] max-w-[320px]
+        border-2 rounded-lg shadow-lg p-4 min-w-[280px] max-w-[320px]
         ${getColorClasses()}
       `}
       onClick={() => onRemove(notification.id)}
