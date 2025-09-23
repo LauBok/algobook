@@ -8,11 +8,7 @@ interface TocItem {
   level: number;
 }
 
-interface TableOfContentsProps {
-  // No props needed - we extract from DOM
-}
-
-export default function TableOfContents({}: TableOfContentsProps = {}) {
+export default function TableOfContents() {
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [isVisible, setIsVisible] = useState(true);
