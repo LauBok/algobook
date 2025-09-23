@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer } from '@/components/interactive';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine } from '@/components/interactive';
 import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
 import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
 import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
@@ -64,6 +64,11 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
   const tableBlocks: TableBlock[] = tables;
   const algorithmWidgetBlocks: AlgorithmWidget[] = algorithmWidgets;
   const widgetBlocks: WidgetBlock[] = widgets;
+
+  // Track heading numbers
+  let h2Counter = 0;
+  let h3Counter = 0;
+  let h4Counter = 0;
   
   // First pass: extract executable code blocks and callstack visualizers, replace with placeholders
   const processedContent = content
@@ -153,6 +158,123 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
         
         mergeVisualizers.push(visualizerInfo);
         return `<MERGE_VISUALIZER_PLACEHOLDER_${visualizerInfo.id}/>`;
+      }
+    )
+    .replace(
+      /```function-machine\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        try {
+          // Parse YAML-like config
+          const lines = configBlock.trim().split('\n');
+          const config: any = {};
+          let currentKey = '';
+          let currentArray: any[] = [];
+          let inArray = false;
+          let indent = 0;
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+
+            if (trimmedLine.includes(':') && !trimmedLine.startsWith('-')) {
+              if (inArray && currentKey) {
+                config[currentKey] = currentArray;
+                currentArray = [];
+                inArray = false;
+              }
+
+              const [key, ...valueParts] = trimmedLine.split(':');
+              const value = valueParts.join(':').trim();
+              currentKey = key.trim();
+
+              if (value) {
+                config[currentKey] = value === 'true' ? true : value === 'false' ? false : value;
+              } else {
+                inArray = true;
+                currentArray = [];
+              }
+            } else if (inArray && trimmedLine.startsWith('-')) {
+              const itemContent = trimmedLine.substring(1).trim();
+              if (itemContent.includes(':')) {
+                // Object in array
+                const item: any = {};
+                const [itemKey, ...itemValueParts] = itemContent.split(':');
+                item[itemKey.trim()] = itemValueParts.join(':').trim();
+
+                // Look ahead for nested properties
+                let nextLineIndex = lines.indexOf(line) + 1;
+                while (nextLineIndex < lines.length) {
+                  const nextLine = lines[nextLineIndex];
+                  if (nextLine.trim().startsWith('-') || !nextLine.trim() || !nextLine.startsWith('      ')) break;
+
+                  if (nextLine.trim().includes(':')) {
+                    const [nestedKey, ...nestedValueParts] = nextLine.trim().split(':');
+                    const nestedValue = nestedValueParts.join(':').trim();
+
+                    if (nestedKey.trim() === 'inputs') {
+                      item.inputs = [];
+                      nextLineIndex++;
+                      while (nextLineIndex < lines.length) {
+                        const inputLine = lines[nextLineIndex];
+                        if (!inputLine.startsWith('        -')) break;
+
+                        const inputItem: any = {};
+                        const inputContent = inputLine.trim().substring(1).trim();
+                        if (inputContent.includes(':')) {
+                          const [inputKey, ...inputValueParts] = inputContent.split(':');
+                          inputItem[inputKey.trim()] = inputValueParts.join(':').trim().replace(/"/g, '');
+
+                          // Look for value property
+                          if (nextLineIndex + 1 < lines.length && lines[nextLineIndex + 1].includes('value:')) {
+                            nextLineIndex++;
+                            const valueLine = lines[nextLineIndex];
+                            const [, ...valueValueParts] = valueLine.trim().split(':');
+                            inputItem.value = valueValueParts.join(':').trim().replace(/"/g, '');
+                          }
+                        }
+                        item.inputs.push(inputItem);
+                        nextLineIndex++;
+                      }
+                      continue;
+                    } else {
+                      item[nestedKey.trim()] = nestedValue.replace(/"/g, '');
+                    }
+                  }
+                  nextLineIndex++;
+                }
+
+                currentArray.push(item);
+              } else {
+                currentArray.push(itemContent);
+              }
+            }
+          }
+
+          if (inArray && currentKey) {
+            config[currentKey] = currentArray;
+          }
+
+          const id = config.id || `function-machine-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+          // Add to widgets
+          widgetBlocks.push({
+            id,
+            type: 'FunctionMachine',
+            title: config.title,
+            description: config.description,
+            props: {
+              machineName: config.machineName,
+              description: config.description,
+              examples: config.examples,
+              interactive: config.interactive
+            }
+          });
+
+          return `<WIDGET_PLACEHOLDER_${id}/>`;
+        } catch (error) {
+          console.error('Error parsing function-machine config:', error);
+          return `<div class="error">Error parsing function-machine configuration</div>`;
+        }
       }
     );
 
@@ -327,6 +449,29 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
     return hints.slice(0, 3);
   };
 
+  // Function to add heading numbers
+  const addHeadingNumbers = (text: string): string => {
+    return text.replace(/^(#{2,4})\s+(.+)$/gm, (match, hashes, title) => {
+      const level = hashes.length;
+
+      if (level === 2) {
+        h2Counter++;
+        h3Counter = 0; // Reset h3 counter
+        h4Counter = 0; // Reset h4 counter
+        return `${hashes} §${h2Counter}. ${title}`;
+      } else if (level === 3) {
+        h3Counter++;
+        h4Counter = 0; // Reset h4 counter
+        return `${hashes} §${h2Counter}.${h3Counter}. ${title}`;
+      } else if (level === 4) {
+        h4Counter++;
+        return `${hashes} §${h2Counter}.${h3Counter}.${h4Counter}. ${title}`;
+      }
+
+      return match;
+    });
+  };
+
 
   return (
     <div className="space-y-0">
@@ -382,6 +527,8 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
               return <LomutoPartitionVisualizer {...props} />;
             case 'DecisionTreeVisualizer':
               return <DecisionTreeVisualizer {...props} />;
+            case 'FunctionMachine':
+              return <FunctionMachine {...props} />;
             default:
               console.warn(`Unknown widget type: ${type}`);
               return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown widget: {type}</div>;
@@ -646,10 +793,10 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
           }
           return null;
         } else {
-          // Handle regular markdown content
+          // Handle regular markdown content with heading numbers
           return part.trim() ? (
             <div key={index} className="prose prose-lg prose-gray max-w-none mb-8">
-              <ReactMarkdown 
+              <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
@@ -658,7 +805,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
                     const match = /language-(\w+)/.exec(className || '');
                     const language = match ? match[1] : 'python';
                     const codeContent = String(children).replace(/\n$/, '');
-                    
+
                     // If it's inline code, always render as inline
                     if (inline) {
                       return (
@@ -667,10 +814,10 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
                         </code>
                       );
                     }
-                    
+
                     // For block code, check if it's short enough to be treated as inline
                     const isShortCode = !codeContent.includes('\n') && codeContent.length < 50;
-                    
+
                     if (isShortCode) {
                       return (
                         <code className="bg-gray-100 px-1 py-0.5 rounded font-mono" {...props}>
@@ -678,7 +825,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
                         </code>
                       );
                     }
-                    
+
                     // For longer code blocks, use the full CodeBlock component
                     return (
                       <CodeBlock language={language} showLineNumbers={true} showCopyButton={true}>
@@ -688,7 +835,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
                   },
                 }}
               >
-                {part}
+                {addHeadingNumbers(part)}
               </ReactMarkdown>
             </div>
           ) : null;

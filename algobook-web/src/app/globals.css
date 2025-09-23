@@ -38,10 +38,43 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+
 /* Ensure prose headings and content are properly styled */
 .prose {
   color: #1f2937; /* Default text color */
+  font-family: 'Georgia', 'Times New Roman', serif; /* Better serif font for reading */
+  max-width: 90ch !important; /* Constrain text width */
+  margin: 0 auto; /* Center the content */
 }
+
+/* Constrain all interactive components to same width as text */
+.space-y-0 > .mb-8 {
+  max-width: 90ch !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Make callout and playground wrapper containers wider to account for inner padding */
+.space-y-0 > .mb-8:has(.bg-blue-50.border.rounded-lg),
+.space-y-0 > .mb-8:has(.bg-green-50.border.rounded-lg),
+.space-y-0 > .mb-8:has(.bg-yellow-50.border.rounded-lg),
+.space-y-0 > .mb-8:has(.bg-red-50.border.rounded-lg),
+.space-y-0 > .mb-8:has(.border.border-gray-200.rounded-lg.bg-white.shadow-sm) {
+  max-width: calc(90ch + 3rem) !important; /* Override the 90ch constraint for callout and playground containers */
+}
+
+/* Make callout and playground content area match text width by accounting for padding */
+.bg-blue-50.border.rounded-lg, /* note callouts */
+.bg-green-50.border.rounded-lg, /* hint callouts */
+.bg-yellow-50.border.rounded-lg, /* warning callouts */
+.bg-red-50.border.rounded-lg, /* danger callouts */
+.border.border-gray-200.rounded-lg.bg-white.shadow-sm /* code playgrounds */ {
+  max-width: none !important; /* Let the parent container control the width */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important; /* Include padding in the width calculation */
+}
+
 
 
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
@@ -66,9 +99,22 @@ body {
   line-height: 2rem;
 }
 
+.prose h4 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.prose h4::before {
+  counter-increment: h4-counter;
+  content: "§" counter(h2-counter) "." counter(h3-counter) "." counter(h4-counter) ". ";
+}
+
 .prose p {
-  color: #1f2937 !important; /* text-gray-800 */
-  margin-bottom: 1rem;
+  color: #374151 !important; /* text-gray-700 - lighter for easier reading */
+  margin-bottom: 1.5rem; /* More space between paragraphs */
+  line-height: 1.8; /* More line spacing */
+  font-size: 1.1rem; /* Slightly larger text */
+  text-align: justify; /* Align both left and right edges */
 }
 
 .prose ul, .prose ol {
@@ -77,8 +123,9 @@ body {
 }
 
 .prose li {
-  color: #1f2937 !important; /* text-gray-800 */
-  margin-bottom: 0.5rem;
+  color: #374151 !important; /* text-gray-700 */
+  margin-bottom: 0.75rem; /* More space between list items */
+  line-height: 1.7; /* Better line spacing for lists */
 }
 
 .prose ul li {
@@ -90,8 +137,8 @@ body {
 }
 
 .prose strong {
-  color: #111827 !important; /* text-gray-900 */
-  font-weight: 700;
+  color: #1f2937 !important; /* text-gray-800 */
+  font-weight: 600; /* Slightly lighter bold for better readability */
 }
 
 .prose code {
@@ -104,6 +151,7 @@ body {
   font-feature-settings: 'liga' 0, 'calt' 0 !important; /* Disable ligatures */
   font-variant-ligatures: none !important;
   font-weight: normal !important; /* Monaco Editor uses normal weight */
+  white-space: nowrap !important; /* Prevent inline code from wrapping */
 }
 
 /* Ensure inline code in headers maintains appropriate font size */

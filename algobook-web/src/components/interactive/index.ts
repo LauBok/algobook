@@ -19,3 +19,4 @@ export { default as MergeSortVisualizer } from './MergeSortVisualizer';
 export { default as QuickSortVisualizer } from './QuickSortVisualizer';
 export { default as LomutoPartitionVisualizer } from './LomutoPartitionVisualizer';
 export { default as DecisionTreeVisualizer } from './DecisionTreeVisualizer';
+export { default as FunctionMachine } from './FunctionMachine';

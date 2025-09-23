@@ -37,11 +37,12 @@ export default function MultipleChoice({
   // Function to render question content with ReactMarkdown (supports KaTeX, code blocks, inline code)
   const renderQuestionContent = (text: string) => {
     return (
-      <div className="prose prose-sm max-w-none">
+      <div className="prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
         <ReactMarkdown 
           remarkPlugins={[remarkMath]}
           rehypePlugins={[rehypeKatex]}
           components={{
+            p: ({children}) => <div className="m-0">{children}</div>,
             code: (props: any) => {
               const { inline, className, children } = props;
               // If it has a language className (e.g., language-python), it's a fenced code block
@@ -143,10 +144,7 @@ export default function MultipleChoice({
   return (
     <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-3">Quiz Question</h3>
-        <div className="prose prose-sm max-w-none">
-          {renderQuestionContent(question)}
-        </div>
+        {renderQuestionContent(question)}
       </div>
 
       <div className="px-6 py-4 space-y-3">

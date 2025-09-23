@@ -48,6 +48,15 @@ export default function CodePlayground({
   const [terminalHistory, setTerminalHistory] = useState<Array<{type: 'output' | 'input' | 'prompt' | 'system', content: string}>>([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [isPopout, setIsPopout] = useState(false);
+  const [popoutFontSize, setPopoutFontSize] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('algobook_popout_font_size');
+      return saved ? parseInt(saved) : 16;
+    }
+    return 16;
+  });
   // const [interpreter] = useState(() => new PythonInterpreter()); // Reserved for future use
 
   // Ensure client-side only rendering
@@ -73,12 +82,44 @@ export default function CodePlayground({
     setShowHints(false);
   }, [settings?.showHints, hints]);
 
+  // Handle ESC key to close popout modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isPopout) {
+        setIsPopout(false);
+      }
+    };
+
+    if (isPopout) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isPopout]);
+
+  // Save popout font size to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('algobook_popout_font_size', popoutFontSize.toString());
+    }
+  }, [popoutFontSize]);
+
+  const adjustPopoutFontSize = (delta: number) => {
+    setPopoutFontSize(prev => Math.max(10, Math.min(24, prev + delta)));
+  };
+
   const runCode = async () => {
     if (isRunning) return;
-    
+
     setIsRunning(true);
     setError('');
-    
+    setShowTerminal(true); // Show terminal when code is run
+    console.log('Setting showTerminal to true, showOutput:', showOutput);
+
     if (terminalMode) {
       await runInteractiveMode();
     } else {
@@ -243,6 +284,7 @@ export default function CodePlayground({
     setCurrentInput('');
     setIsWaitingForInput(false);
     setInputData('');
+    setShowTerminal(false);
     LineExecutor.reset();
   };
 
@@ -283,12 +325,21 @@ export default function CodePlayground({
     setOutput('');
     setError('');
     LineExecutor.reset();
-    
+
     // Automatically re-run the code with fresh environment
     // Keep isRunning as true during the restart process
     if (terminalMode) {
       await runInteractiveMode();
     }
+  };
+
+  const openPopout = () => {
+    setIsPopout(true);
+    setShowTerminal(true); // Show terminal in popout by default
+  };
+
+  const closePopout = () => {
+    setIsPopout(false);
   };
 
   // Monaco editor ref for layout recalculation
@@ -306,6 +357,75 @@ export default function CodePlayground({
   // Force layout recalculation when editor is ready
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
+
+    // Set up scroll-through behavior
+    const editorDomNode = editor.getDomNode();
+    if (editorDomNode) {
+      let boundaryScrollCount = 0;
+      let boundaryScrollTimeout: NodeJS.Timeout | null = null;
+      const BOUNDARY_SCROLL_THRESHOLD = 25; // Much higher threshold for intentional scroll-through
+      const BOUNDARY_RESET_DELAY = 150; // Slightly longer reset delay
+
+      editorDomNode.addEventListener('wheel', (e: WheelEvent) => {
+        const scrollTop = editor.getScrollTop();
+        const scrollHeight = editor.getScrollHeight();
+        const editorHeight = editor.getLayoutInfo().height;
+
+        // Calculate if we're at the boundaries (exact boundaries)
+        const tolerance = 0;
+        const isAtTop = scrollTop <= tolerance;
+        const isAtBottom = scrollTop >= scrollHeight - editorHeight - tolerance;
+
+        // Check if we're trying to scroll beyond the boundaries
+        const scrollingUp = e.deltaY < 0;
+        const scrollingDown = e.deltaY > 0;
+
+        // Check if we're at a boundary and trying to scroll beyond
+        const atBoundaryAndScrollingBeyond = (scrollingUp && isAtTop) || (scrollingDown && isAtBottom);
+
+        if (atBoundaryAndScrollingBeyond) {
+          // Increment boundary scroll counter
+          boundaryScrollCount++;
+
+          // Reset the timeout
+          if (boundaryScrollTimeout) {
+            clearTimeout(boundaryScrollTimeout);
+          }
+          boundaryScrollTimeout = setTimeout(() => {
+            boundaryScrollCount = 0;
+          }, BOUNDARY_RESET_DELAY);
+
+          // Only scroll page after threshold is reached
+          if (boundaryScrollCount >= BOUNDARY_SCROLL_THRESHOLD) {
+            // Prevent the editor from handling this scroll
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Manually scroll the page
+            window.scrollBy({
+              top: e.deltaY,
+              behavior: 'auto'
+            });
+            return;
+          } else {
+            // Block scroll but don't trigger page scroll yet
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        } else {
+          // Not at boundary - reset counter and allow normal editor scroll
+          boundaryScrollCount = 0;
+          if (boundaryScrollTimeout) {
+            clearTimeout(boundaryScrollTimeout);
+            boundaryScrollTimeout = null;
+          }
+        }
+
+        // Don't prevent default - let the editor handle the scroll normally
+      }, { passive: false, capture: true });
+    }
+
     // Force layout recalculation after a short delay
     setTimeout(() => {
       editor.layout();
@@ -404,48 +524,67 @@ export default function CodePlayground({
           <p className="text-sm text-gray-700">{description}</p>
         </div>
       )}
-      
-      <div className="flex flex-col lg:flex-row">
+
+      <div className="flex flex-col">
         {/* Code Editor */}
-        <div className="flex-1">
+        {!isPopout && (
+        <div className="w-full">
           <div className="flex justify-between items-center px-6 py-3 bg-gray-50 border-b border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700">Python Code</h4>
+            <div className="flex items-center gap-3">
+              <h4 className="text-sm font-medium text-gray-700">Python Code</h4>
+              <button
+                onClick={openPopout}
+                className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors"
+                title="Open in expanded view"
+              >
+                🔍 Expand
+              </button>
+            </div>
             <div className="flex gap-2">
+              {showTerminal ? (
+                <button
+                  onClick={() => setShowTerminal(false)}
+                  className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 transition-colors"
+                  title="Hide terminal"
+                >
+                  Hide Terminal
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowTerminal(true)}
+                  className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                  title="Show terminal"
+                >
+                  Show Terminal
+                </button>
+              )}
               <button
                 onClick={() => setTerminalMode(!terminalMode)}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
-                  terminalMode 
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                  terminalMode
+                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
                 title={terminalMode ? 'Switch to batch mode' : 'Switch to terminal mode'}
               >
-                {terminalMode ? '🖥️ Terminal' : '📄 Batch'}
+                {terminalMode ? '🖥️ Terminal Mode' : '📄 Batch Mode'}
               </button>
-              {Array.isArray(hints) && hints.length > 0 && settings?.showHints && (
-                <button
-                  onClick={() => setShowHints(!showHints)}
-                  className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors"
-                >
-                  {showHints ? 'Hide' : 'Show'} Hints
-                </button>
-              )}
               <button
                 onClick={resetCode}
                 className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
               >
-                Reset All
+                Reset Code
               </button>
               <button
                 onClick={isRunning ? resetTerminal : runCode}
                 disabled={false}
                 className={`text-xs px-3 py-1 rounded transition-colors ${
-                  isRunning 
-                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                  isRunning
+                    ? 'bg-orange-600 text-white hover:bg-orange-700'
                     : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
-                {isRunning ? 'Restart' : 'Run Code'}
+                {isRunning ? 'Restart' : (showTerminal ? 'Run Code' : 'Run Code & Show Output')}
               </button>
             </div>
           </div>
@@ -525,10 +664,24 @@ export default function CodePlayground({
             </div>
           </div>
         </div>
+        )}
+
+        {/* Collapsed View When Popout is Active */}
+        {isPopout && (
+          <div className="w-full p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+            <div className="text-purple-700 font-medium mb-1">Code Playground opened in expanded view</div>
+            <button
+              onClick={closePopout}
+              className="px-3 py-1 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            >
+              Close Expanded View
+            </button>
+          </div>
+        )}
 
         {/* Output Panel */}
-        {showOutput && (
-          <div className="lg:w-96 lg:border-l border-t lg:border-t-0 border-gray-200">
+        {showOutput && showTerminal && (
+          <div className="w-full border-t border-gray-200">
             <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
               <h4 className="text-sm font-medium text-gray-700">
                 {terminalMode ? '🖥️ Interactive Terminal' : '📄 Input & Output'}
@@ -623,6 +776,186 @@ export default function CodePlayground({
               </li>
             )) : null}
           </ul>
+        </div>
+      )}
+
+      {/* Expanded Code Playground Modal */}
+      {isPopout && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-7xl h-5/6 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">🔍 Expanded Code Playground</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={resetCode}
+                  className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                >
+                  🔄 Reset Code
+                </button>
+                <button
+                  onClick={closePopout}
+                  className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              {/* Code Editor Section */}
+              <div className="flex-[2] flex flex-col border-r border-gray-200">
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                  <h4 className="text-sm font-medium text-gray-700">Python Code</h4>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setTerminalMode(!terminalMode)}
+                      className={`text-xs px-2 py-1 rounded transition-colors ${
+                        terminalMode
+                          ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={terminalMode ? 'Switch to batch mode' : 'Switch to terminal mode'}
+                    >
+                      {terminalMode ? '🖥️ Terminal Mode' : '📄 Batch Mode'}
+                    </button>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded px-2 py-1">
+                      <button
+                        onClick={() => adjustPopoutFontSize(-1)}
+                        className="text-xs px-1 py-0.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        title="Decrease font size"
+                      >
+                        A-
+                      </button>
+                      <span className="text-xs text-gray-600 px-1">{popoutFontSize}px</span>
+                      <button
+                        onClick={() => adjustPopoutFontSize(1)}
+                        className="text-xs px-1 py-0.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        title="Increase font size"
+                      >
+                        A+
+                      </button>
+                    </div>
+                    <button
+                      onClick={isRunning ? resetTerminal : runCode}
+                      className={`text-xs px-3 py-1 rounded transition-colors ${
+                        isRunning
+                          ? 'bg-orange-600 text-white hover:bg-orange-700'
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {isRunning ? 'Restart' : 'Run Code'}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="python"
+                    value={code}
+                    onChange={(value) => {
+                      const newCode = value || '';
+                      setCode(newCode);
+                      onCodeChange?.(newCode);
+                    }}
+                    options={{
+                      readOnly: !editable,
+                      minimap: { enabled: true },
+                      scrollBeyondLastLine: false,
+                      fontSize: popoutFontSize,
+                      lineNumbers: settings?.showLineNumbers ? 'on' : 'off',
+                      automaticLayout: true,
+                      theme: (() => {
+                        try {
+                          return settingsManager.getMonacoTheme();
+                        } catch {
+                          return 'vs-light';
+                        }
+                      })(),
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Terminal Section */}
+              {showOutput && (
+                <div className="flex-[1] flex flex-col">
+                  <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700">
+                      {terminalMode ? '🖥️ Interactive Terminal' : '📄 Input & Output'}
+                    </h4>
+                  </div>
+
+                  {!terminalMode && (
+                    <div className="px-4 py-3 border-b border-gray-200 bg-blue-50">
+                      <label className="text-xs font-medium text-blue-700 mb-1 block">
+                        Input (for input() function):
+                      </label>
+                      <textarea
+                        value={inputData}
+                        onChange={(e) => setInputData(e.target.value)}
+                        placeholder="Enter input data (one value per line)"
+                        className="w-full px-2 py-1 text-xs border border-blue-200 rounded focus:border-blue-400 focus:outline-none resize-none"
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-hidden">
+                    {terminalMode ? (
+                      <div className="h-full p-4 overflow-auto bg-gray-900 text-green-400 text-sm" style={{ fontFamily: 'Consolas, "SF Mono", Menlo, "Roboto Mono", "Ubuntu Mono", "Courier New", monospace' }}>
+                        {terminalHistory.length === 0 ? (
+                          <div className="text-gray-500">Terminal ready. Click "Run Code" to start...</div>
+                        ) : (
+                          terminalHistory.map((entry, index) => (
+                            <div key={index} className={`mb-1 whitespace-pre-wrap ${
+                              entry.type === 'input' ? 'text-yellow-300' :
+                              entry.type === 'prompt' ? 'text-blue-300' :
+                              entry.type === 'system' ? 'text-gray-400 italic' : 'text-green-400'
+                            }`}>
+                              {entry.type === 'input' && '> '}
+                              {entry.content || '\u00A0'}
+                            </div>
+                          ))
+                        )}
+                        {isWaitingForInput && (
+                          <div className="flex items-center">
+                            <span className="text-yellow-300">{'> '}</span>
+                            <input
+                              type="text"
+                              value={currentInput}
+                              onChange={(e) => setCurrentInput(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleTerminalInput(currentInput);
+                                }
+                              }}
+                              className="flex-1 bg-transparent border-none outline-none text-yellow-300 ml-1"
+                              style={{ fontFamily: 'Consolas, "SF Mono", Menlo, "Roboto Mono", "Ubuntu Mono", "Courier New", monospace' }}
+                              placeholder="Type input and press Enter..."
+                              autoFocus
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-full p-4 overflow-auto">
+                        {error ? (
+                          <div className="text-red-600 text-sm whitespace-pre-wrap" style={{ fontFamily: 'Consolas, "SF Mono", Menlo, "Roboto Mono", "Ubuntu Mono", "Courier New", monospace' }}>
+                            <div className="text-red-700 font-medium mb-1">Error:</div>
+                            {error}
+                          </div>
+                        ) : (
+                          <div className="text-gray-800 text-sm whitespace-pre-wrap" style={{ fontFamily: 'Consolas, "SF Mono", Menlo, "Roboto Mono", "Ubuntu Mono", "Courier New", monospace' }}>
+                            {output || 'Click "Run Code" to see output here.'}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
