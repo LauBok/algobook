@@ -16,6 +16,8 @@
     "@types/plotly.js": "^3.0.3",
     "@types/qrcode": "^1.5.5",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "js-yaml": "^4.1.0",
     "katex": "^0.16.22",
     "lucide-react": "^0.544.0",
