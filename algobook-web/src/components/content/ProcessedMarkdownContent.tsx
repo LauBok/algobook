@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine } from '@/components/interactive';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine, BooleanLogicCalculator, BinaryConverter, BinaryToDecimalConverter, DecimalToBinaryConverter, BinaryAdditionGame, BitManipulationWidget, ASCIIEncoder } from '@/components/interactive';
 import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
 import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
 import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
@@ -529,6 +529,20 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
               return <DecisionTreeVisualizer {...props} />;
             case 'FunctionMachine':
               return <FunctionMachine {...props} />;
+            case 'BooleanLogicCalculator':
+              return <BooleanLogicCalculator {...props} />;
+            case 'BinaryConverter':
+              return <BinaryConverter {...props} />;
+            case 'BinaryToDecimalConverter':
+              return <BinaryToDecimalConverter {...props} />;
+            case 'DecimalToBinaryConverter':
+              return <DecimalToBinaryConverter {...props} />;
+            case 'BinaryAdditionGame':
+              return <BinaryAdditionGame {...props} />;
+            case 'BitManipulationWidget':
+              return <BitManipulationWidget {...props} />;
+            case 'ASCIIEncoder':
+              return <ASCIIEncoder {...props} />;
             default:
               console.warn(`Unknown widget type: ${type}`);
               return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown widget: {type}</div>;

@@ -20,3 +20,12 @@ export { default as QuickSortVisualizer } from './QuickSortVisualizer';
 export { default as LomutoPartitionVisualizer } from './LomutoPartitionVisualizer';
 export { default as DecisionTreeVisualizer } from './DecisionTreeVisualizer';
 export { default as FunctionMachine } from './FunctionMachine';
+
+// Digital foundations teaching widgets
+export { default as BooleanLogicCalculator } from './BooleanLogicCalculator';
+export { default as BinaryConverter } from './BinaryConverter';
+export { default as BinaryToDecimalConverter } from './BinaryToDecimalConverter';
+export { default as DecimalToBinaryConverter } from './DecimalToBinaryConverter';
+export { default as BinaryAdditionGame } from './BinaryAdditionGame';
+export { default as BitManipulationWidget } from './BitManipulationWidget';
+export { default as ASCIIEncoder } from './ASCIIEncoder';
