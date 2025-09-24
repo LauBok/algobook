@@ -49,10 +49,17 @@ export const CHAPTER_METADATA: Record<string, ChapterMetadata> = {
       },
       {
         id: '1.4',
-        title: 'Practice and Chapter Review',
+        title: 'Data Types: From Bits to Information',
         order: 4,
         estimatedMinutes: 60,
-        description: 'Apply everything you\'ve learned through hands-on challenges and reinforce key concepts.'
+        description: 'Understand how computers represent different types of data using bit patterns.'
+      },
+      {
+        id: '1.5',
+        title: 'Programs and Execution: Bridging Algorithms to Hardware',
+        order: 5,
+        estimatedMinutes: 45,
+        description: 'Learn how algorithms become executable programs and how computers actually run your code.'
       }
     ],
     learningObjectives: [

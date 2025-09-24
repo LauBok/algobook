@@ -27,5 +27,8 @@ export { default as BinaryConverter } from './BinaryConverter';
 export { default as BinaryToDecimalConverter } from './BinaryToDecimalConverter';
 export { default as DecimalToBinaryConverter } from './DecimalToBinaryConverter';
 export { default as BinaryAdditionGame } from './BinaryAdditionGame';
+export { default as SignedBinaryAdditionGame } from './SignedBinaryAdditionGame';
 export { default as BitManipulationWidget } from './BitManipulationWidget';
 export { default as ASCIIEncoder } from './ASCIIEncoder';
+export { default as FloatingPointWidget } from './FloatingPointWidget';
+export { default as SpaceEfficientMultiplicationWidget } from './SpaceEfficientMultiplicationWidget';
