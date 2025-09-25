@@ -145,8 +145,9 @@ export function getSectionData(chapterId: string, sectionId: string): { section:
     const sections = {
       '1.1': createSectionFromMarkdown(chapterId, '1.1', 'What is an Algorithm? Pure Problem-Solving Concepts', 1, 15),
       '1.2': createSectionFromMarkdown(chapterId, '1.2', 'Python Basics: Your First Code', 2, 30),
-      '1.3': createSectionFromMarkdown(chapterId, '1.3', 'Building Complete Programs', 3, 50),
-      '1.4': createSectionFromMarkdown(chapterId, '1.4', 'Practice and Chapter Review', 4, 60)
+      '1.3': createSectionFromMarkdown(chapterId, '1.3', 'The Digital Foundation', 3, 50),
+      '1.4': createSectionFromMarkdown(chapterId, '1.4', 'Data Types: From Bits to Information', 4, 60),
+      '1.5': createSectionFromMarkdown(chapterId, '1.5', 'Programs and Execution: Bridging Algorithms to Hardware', 5, 45)
     };
 
     const section = sections[sectionId as keyof typeof sections];

@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine, BooleanLogicCalculator, BinaryConverter, BinaryToDecimalConverter, DecimalToBinaryConverter, BinaryAdditionGame, BitManipulationWidget, ASCIIEncoder } from '@/components/interactive';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine, BooleanLogicCalculator, BinaryConverter, BinaryToDecimalConverter, DecimalToBinaryConverter, BinaryAdditionGame, SignedBinaryAdditionGame, BitManipulationWidget, ASCIIEncoder, FloatingPointWidget, SpaceEfficientMultiplicationWidget } from '@/components/interactive';
 import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
 import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
 import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
@@ -276,6 +276,43 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
           return `<div class="error">Error parsing function-machine configuration</div>`;
         }
       }
+    )
+    .replace(
+      /```widget\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        try {
+          // Parse YAML-like config
+          const lines = configBlock.trim().split('\n');
+          const config: any = {};
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+
+            if (trimmedLine.includes(':')) {
+              const [key, ...valueParts] = trimmedLine.split(':');
+              const value = valueParts.join(':').trim();
+              config[key.trim()] = value === 'true' ? true : value === 'false' ? false : value;
+            }
+          }
+
+          const id = config.id || `widget-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+          // Add to widgets
+          widgetBlocks.push({
+            id,
+            type: config.type,
+            title: config.title,
+            description: config.description,
+            props: config.props || {}
+          });
+
+          return `<WIDGET_PLACEHOLDER_${id}/>`;
+        } catch (error) {
+          console.error('Error parsing widget config:', error);
+          return `<div class="error">Error parsing widget configuration</div>`;
+        }
+      }
     );
 
 
@@ -539,10 +576,16 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
               return <DecimalToBinaryConverter {...props} />;
             case 'BinaryAdditionGame':
               return <BinaryAdditionGame {...props} />;
+            case 'SignedBinaryAdditionGame':
+              return <SignedBinaryAdditionGame {...props} />;
             case 'BitManipulationWidget':
               return <BitManipulationWidget {...props} />;
             case 'ASCIIEncoder':
               return <ASCIIEncoder {...props} />;
+            case 'FloatingPointWidget':
+              return <FloatingPointWidget {...props} />;
+            case 'SpaceEfficientMultiplicationWidget':
+              return <SpaceEfficientMultiplicationWidget {...props} />;
             default:
               console.warn(`Unknown widget type: ${type}`);
               return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown widget: {type}</div>;
