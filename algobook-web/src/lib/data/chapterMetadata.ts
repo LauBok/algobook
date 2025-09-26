@@ -20,68 +20,69 @@ export interface SectionMetadata {
 export const CHAPTER_METADATA: Record<string, ChapterMetadata> = {
   '01-getting-started': {
     id: '01-getting-started',
-    title: 'Getting Started with Problem Solving',
+    title: 'Getting Started: From Problems to Programs',
     order: 1,
     part: 1,
     partTitle: 'Programming Foundations & Simple Algorithms',
-    description: 'Learn to solve problems step by step while mastering Python basics',
+    description: 'Build a complete foundation from algorithmic thinking through binary representation to Python programming, connecting theory to practice',
     sections: [
       {
         id: '1.1',
-        title: 'What is an Algorithm? Pure Problem-Solving Concepts',
+        title: 'Why Learn Algorithms and Programming?',
         order: 1,
-        estimatedMinutes: 15,
-        description: 'Learn how to break down problems into step-by-step solutions before writing any code.'
+        estimatedMinutes: 20,
+        description: 'Discover the power of algorithmic thinking and understand how this course will transform your problem-solving abilities.'
       },
       {
         id: '1.2',
-        title: 'Python Basics: Your First Code',
+        title: 'From Thoughts to Instructions',
         order: 2,
         estimatedMinutes: 30,
-        description: 'Write your first Python program and learn variables, input/output, and basic syntax.'
+        description: 'Learn systematic approaches to breaking down complex problems into precise, step-by-step algorithmic solutions.'
       },
       {
         id: '1.3',
-        title: 'Building Complete Programs',
+        title: 'The Digital Foundation',
         order: 3,
-        estimatedMinutes: 50,
-        description: 'Combine problem-solving techniques with Python skills to create complete, working programs.'
+        estimatedMinutes: 45,
+        description: 'Understand how computers represent all information as binary patterns and process data through bit manipulation.'
       },
       {
         id: '1.4',
-        title: 'Data Types: From Bits to Information',
+        title: 'Making It Real: Data Types and Representation',
         order: 4,
-        estimatedMinutes: 60,
-        description: 'Understand how computers represent different types of data using bit patterns.'
+        estimatedMinutes: 50,
+        description: 'Explore how computers interpret bit patterns as different data types and implement mathematical operations.'
       },
       {
         id: '1.5',
-        title: 'Programs and Execution: Bridging Algorithms to Hardware',
+        title: 'From Algorithms to Programs',
         order: 5,
-        estimatedMinutes: 45,
-        description: 'Learn how algorithms become executable programs and how computers actually run your code.'
+        estimatedMinutes: 35,
+        description: 'Bridge the gap from algorithmic thinking to executable programs through instruction sequences and programming languages.'
       },
       {
         id: '1.6',
-        title: 'Chapter 1 Practice and Review',
+        title: 'Python: From Theory to Practice',
         order: 6,
-        estimatedMinutes: 60,
-        description: 'Apply everything you\'ve learned in comprehensive exercises and practice problems.'
+        estimatedMinutes: 75,
+        description: 'Apply computational foundations by learning Python fundamentals: variables, operations, data types, and input/output.'
       },
       {
         id: '1.7',
         title: 'Chapter Summary and Self-Assessment',
         order: 7,
-        estimatedMinutes: 20,
-        description: 'Review key concepts and assess your understanding of computational foundations.'
+        estimatedMinutes: 15,
+        description: 'Review key concepts and assess mastery of computational foundations using interactive checklists.'
       }
     ],
     learningObjectives: [
-      'Write your first Python program to solve a real problem',
-      'Understand the basic structure of an algorithm',
-      'Use variables and input/output in Python',
-      'Test and debug simple solutions',
-      'Feel confident approaching programming challenges'
+      'Break complex problems into systematic, step-by-step algorithmic solutions',
+      'Understand how computers represent and process all information as binary patterns',
+      'Explain how data types provide interpretation schemes for bit patterns in memory',
+      'Connect high-level programming constructs to underlying computational processes and machine execution',
+      'Write Python programs using variables, operations, strings, and input/output with deep understanding',
+      'Apply computational thinking to solve real problems by bridging theory and practical programming skills'
     ]
   },
 
@@ -515,17 +516,22 @@ export const CHAPTER_METADATA: Record<string, ChapterMetadata> = {
   }
 };
 
+// Generate CURRICULUM_STRUCTURE dynamically from CHAPTER_METADATA to avoid duplication
+const getChapterTitle = (id: string): string => {
+  return CHAPTER_METADATA[id]?.title || `Chapter ${id}`;
+};
+
 export const CURRICULUM_STRUCTURE = [
   {
     part: 1,
     title: "Programming Foundations & Simple Algorithms",
     chapters: [
-      { id: "01-getting-started", title: "Getting Started with Problem Solving", order: 1 },
-      { id: "02-logic-control-flow", title: "Logic and Control Flow", order: 2 },
-      { id: "03-loops-iteration", title: "Loops and Iteration", order: 3 },
-      { id: "04-lists-algorithms", title: "Lists and Basic Algorithms", order: 4 },
-      { id: "05-functions", title: "Functions and Code Organization", order: 5 },
-      { id: "06-recursion-divide-conquer", title: "Recursion and Divide & Conquer", order: 6 },
+      { id: "01-getting-started", title: getChapterTitle("01-getting-started"), order: 1 },
+      { id: "02-logic-control-flow", title: getChapterTitle("02-logic-control-flow"), order: 2 },
+      { id: "03-loops-iteration", title: getChapterTitle("03-loops-iteration"), order: 3 },
+      { id: "04-lists-algorithms", title: getChapterTitle("04-lists-algorithms"), order: 4 },
+      { id: "05-functions", title: getChapterTitle("05-functions"), order: 5 },
+      { id: "06-recursion-divide-conquer", title: getChapterTitle("06-recursion-divide-conquer"), order: 6 },
     ],
     challenge: {
       id: "part1-challenge",
@@ -537,9 +543,9 @@ export const CURRICULUM_STRUCTURE = [
     part: 2,
     title: "Efficient Algorithms & Complexity",
     chapters: [
-      { id: "07-algorithm-efficiency", title: "Algorithm Efficiency and Big O", order: 7 },
-      { id: "08-binary-search-mastery", title: "Binary Search Mastery", order: 8 },
-      { id: "09-sorting-algorithms", title: "Sorting Algorithms", order: 9 },
+      { id: "07-algorithm-efficiency", title: getChapterTitle("07-algorithm-efficiency"), order: 7 },
+      { id: "08-binary-search-mastery", title: getChapterTitle("08-binary-search-mastery"), order: 8 },
+      { id: "09-sorting-algorithms", title: getChapterTitle("09-sorting-algorithms"), order: 9 },
     ],
     challenge: {
       id: "part2-challenge",
