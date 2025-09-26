@@ -39,6 +39,7 @@ export default function ChecklistWidget({
   const [checklistState, setChecklistState] = useState<ChecklistState>({});
   const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'section' | 'priority'>('section');
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -129,6 +130,19 @@ export default function ChecklistWidget({
         notes
       }
     }));
+  };
+
+  // Toggle section collapse
+  const toggleSectionCollapse = (sectionTitle: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionTitle)) {
+        newSet.delete(sectionTitle);
+      } else {
+        newSet.add(sectionTitle);
+      }
+      return newSet;
+    });
   };
 
   // Reset all progress
@@ -377,16 +391,45 @@ export default function ChecklistWidget({
       <div className="space-y-3">
         {displaySections.length > 0 ? (
           // Render by sections (or priority groups when sorting by priority)
-          displaySections.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
-              <h4 className="font-medium text-gray-700 mb-2 pb-1 border-b border-gray-200">
-                {section.title}
-              </h4>
-              <div className="space-y-2">
-                {section.items.map(item => renderItem({ ...item, sectionTitle: section.title }))}
+          displaySections.map((section, sectionIndex) => {
+            const isCollapsed = collapsedSections.has(section.title);
+            const completedInSection = section.items.filter(item => {
+              const state = checklistState[item.id];
+              return state && state.confidence !== 'unchecked';
+            }).length;
+
+            return (
+              <div key={sectionIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSectionCollapse(section.title)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-150 border-b border-gray-200 flex items-center justify-between transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`transform transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>
+                      ▶
+                    </span>
+                    <h4 className="font-medium text-gray-700 text-left">
+                      {section.title}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="bg-white px-2 py-1 rounded-full border border-gray-300">
+                      {completedInSection}/{section.items.length}
+                    </span>
+                    {completedInSection === section.items.length && section.items.length > 0 && (
+                      <span className="text-green-600">✓</span>
+                    )}
+                  </div>
+                </button>
+
+                {!isCollapsed && (
+                  <div className="p-4 space-y-2 bg-white">
+                    {section.items.map(item => renderItem({ ...item, sectionTitle: section.title }))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           // Render direct items
           displayItems.map(item => renderItem(item))

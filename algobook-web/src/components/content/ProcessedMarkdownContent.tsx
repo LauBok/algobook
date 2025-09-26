@@ -328,7 +328,7 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
 
           for (const line of lines) {
             const trimmedLine = line.trim();
-            if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+            if (!trimmedLine) continue;
 
             // Handle section headers: ## Section Name
             if (trimmedLine.startsWith('##')) {
