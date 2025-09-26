@@ -92,7 +92,16 @@ export default function ChecklistWidget({
       };
     } else {
       // Sort by section (original structure)
-      return { sections, items };
+      if (sections.length > 0) {
+        // We have sections, return them as-is
+        return { sections, items: [] };
+      } else {
+        // No sections, create a default section for direct items
+        return {
+          sections: items.length > 0 ? [{ title: '📋 Items', items }] : [],
+          items: []
+        };
+      }
     }
   };
 

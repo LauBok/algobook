@@ -429,7 +429,8 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
           return `<WIDGET_PLACEHOLDER_${id}/>`;
         } catch (error) {
           console.error('Error parsing checklist config:', error);
-          return `<div class="error">Error parsing checklist configuration: ${error.message}</div>`;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          return `<div class="error">Error parsing checklist configuration: ${errorMessage}</div>`;
         }
       }
     );
