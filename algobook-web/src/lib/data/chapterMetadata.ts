@@ -60,6 +60,20 @@ export const CHAPTER_METADATA: Record<string, ChapterMetadata> = {
         order: 5,
         estimatedMinutes: 45,
         description: 'Learn how algorithms become executable programs and how computers actually run your code.'
+      },
+      {
+        id: '1.6',
+        title: 'Chapter 1 Practice and Review',
+        order: 6,
+        estimatedMinutes: 60,
+        description: 'Apply everything you\'ve learned in comprehensive exercises and practice problems.'
+      },
+      {
+        id: '1.7',
+        title: 'Chapter Summary and Self-Assessment',
+        order: 7,
+        estimatedMinutes: 20,
+        description: 'Review key concepts and assess your understanding of computational foundations.'
       }
     ],
     learningObjectives: [

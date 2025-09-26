@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine, BooleanLogicCalculator, BinaryConverter, BinaryToDecimalConverter, DecimalToBinaryConverter, BinaryAdditionGame, SignedBinaryAdditionGame, BitManipulationWidget, ASCIIEncoder, FloatingPointWidget, SpaceEfficientMultiplicationWidget } from '@/components/interactive';
+import { CodePlayground, CodeBlock, MultipleChoice, CodingExercise, PlotRenderer, TableRenderer, CallStackVisualizer, BinarySearchVisualizer, MergeVisualizer, ComplexityRankingWidget, AlgorithmMysteryGame, BinarySearchStepVisualizer, Matrix2DSearchVisualizer, RotatedArraySearchVisualizer, PeakFindingVisualizer, MastermindChallenge, MergeSortVisualizer, QuickSortVisualizer, LomutoPartitionVisualizer, DecisionTreeVisualizer, FunctionMachine, BooleanLogicCalculator, BinaryConverter, BinaryToDecimalConverter, DecimalToBinaryConverter, BinaryAdditionGame, SignedBinaryAdditionGame, BitManipulationWidget, ASCIIEncoder, FloatingPointWidget, SpaceEfficientMultiplicationWidget, ChecklistWidget } from '@/components/interactive';
 import BubbleSortWidget from '@/components/interactive/BubbleSortWidget';
 import InsertionSortWidget from '@/components/interactive/InsertionSortWidget';
 import { Quiz, Exercise, CalloutBlock, PlotBlock, TableBlock, AlgorithmWidget, WidgetBlock } from '@/lib/types/content';
@@ -313,6 +313,125 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
           return `<div class="error">Error parsing widget configuration</div>`;
         }
       }
+    )
+    .replace(
+      /```checklist\n([\s\S]*?)\n```/g,
+      (match, configBlock) => {
+        try {
+          // Parse checklist with support for both items and sections
+          const lines = configBlock.trim().split('\n');
+          const config: any = {};
+          const items: any[] = [];
+          const sections: any[] = [];
+          let currentSection: any = null;
+          let inSectionItems = false;
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine.startsWith('#')) continue;
+
+            // Handle section headers: ## Section Name
+            if (trimmedLine.startsWith('##')) {
+              // Finalize previous section
+              if (currentSection) {
+                sections.push(currentSection);
+              }
+              // Start new section
+              currentSection = {
+                title: trimmedLine.substring(2).trim(),
+                items: []
+              };
+              inSectionItems = true;
+              continue;
+            }
+
+            if (trimmedLine.includes(':') && !trimmedLine.startsWith('-')) {
+              const [key, ...valueParts] = trimmedLine.split(':');
+              const value = valueParts.join(':').trim();
+              config[key.trim()] = value;
+            } else if (trimmedLine.startsWith('-')) {
+              // Parse item: - id: item1, text: "Learn binary, counting", priority: must-master
+              const itemContent = trimmedLine.substring(1).trim();
+              const item: any = {};
+
+              // Parse key:value pairs while respecting quoted strings
+              const parts: string[] = [];
+              let current = '';
+              let inQuotes = false;
+              let quoteChar = '';
+
+              for (let i = 0; i < itemContent.length; i++) {
+                const char = itemContent[i];
+
+                if ((char === '"' || char === "'") && !inQuotes) {
+                  inQuotes = true;
+                  quoteChar = char;
+                  current += char;
+                } else if (char === quoteChar && inQuotes) {
+                  inQuotes = false;
+                  quoteChar = '';
+                  current += char;
+                } else if (char === ',' && !inQuotes) {
+                  parts.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+
+              if (current.trim()) {
+                parts.push(current.trim());
+              }
+
+              for (const part of parts) {
+                if (part.includes(':')) {
+                  const [k, ...vParts] = part.split(':');
+                  const v = vParts.join(':').trim().replace(/^['"]|['"]$/g, '');
+                  item[k.trim()] = v;
+                }
+              }
+
+              if (item.id && item.text) {
+                if (currentSection && inSectionItems) {
+                  // Add to current section
+                  currentSection.items.push(item);
+                } else {
+                  // Add to global items
+                  items.push(item);
+                }
+              }
+            }
+          }
+
+          // Finalize last section
+          if (currentSection) {
+            sections.push(currentSection);
+          }
+
+          const id = config.id || `checklist-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+          // Use sections if we have them, otherwise use direct items
+          const hasValidSections = sections.length > 0 && sections.some((s: any) => s.items && s.items.length > 0);
+
+          // Add to widgets
+          widgetBlocks.push({
+            id,
+            type: 'ChecklistWidget',
+            title: config.title || 'Checklist',
+            description: config.description,
+            props: {
+              title: config.title || 'Checklist',
+              sections: hasValidSections ? sections : undefined,
+              items: hasValidSections ? undefined : items
+            }
+          });
+
+          return `<WIDGET_PLACEHOLDER_${id}/>`;
+        } catch (error) {
+          console.error('Error parsing checklist config:', error);
+          return `<div class="error">Error parsing checklist configuration: ${error.message}</div>`;
+        }
+      }
     );
 
 
@@ -586,6 +705,8 @@ export default function ProcessedMarkdownContent({ content, quizzes = [], exerci
               return <FloatingPointWidget {...props} />;
             case 'SpaceEfficientMultiplicationWidget':
               return <SpaceEfficientMultiplicationWidget {...props} />;
+            case 'ChecklistWidget':
+              return <ChecklistWidget {...props} />;
             default:
               console.warn(`Unknown widget type: ${type}`);
               return <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">Unknown widget: {type}</div>;

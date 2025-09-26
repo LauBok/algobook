@@ -32,3 +32,4 @@ export { default as BitManipulationWidget } from './BitManipulationWidget';
 export { default as ASCIIEncoder } from './ASCIIEncoder';
 export { default as FloatingPointWidget } from './FloatingPointWidget';
 export { default as SpaceEfficientMultiplicationWidget } from './SpaceEfficientMultiplicationWidget';
+export { default as ChecklistWidget } from './ChecklistWidget';
