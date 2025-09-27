@@ -303,7 +303,7 @@ export default function ChecklistWidget({
   };
 
   return (
-    <div className="border-2 border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-lg p-6">
+    <div className="border-2 border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50 shadow-lg p-6 overflow-visible">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
@@ -388,7 +388,7 @@ export default function ChecklistWidget({
       </div>
 
       {/* Content */}
-      <div className="space-y-3">
+      <div className="space-y-3 overflow-visible">
         {displaySections.length > 0 ? (
           // Render by sections (or priority groups when sorting by priority)
           displaySections.map((section, sectionIndex) => {
@@ -399,7 +399,7 @@ export default function ChecklistWidget({
             }).length;
 
             return (
-              <div key={sectionIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div key={sectionIndex} className="border border-gray-200 rounded-lg overflow-visible">
                 <button
                   onClick={() => toggleSectionCollapse(section.title)}
                   className="w-full px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-150 border-b border-gray-200 flex items-center justify-between transition-all duration-200"
@@ -423,7 +423,7 @@ export default function ChecklistWidget({
                 </button>
 
                 {!isCollapsed && (
-                  <div className="p-4 space-y-2 bg-white">
+                  <div className="p-4 space-y-2 bg-white overflow-visible">
                     {section.items.map(item => renderItem({ ...item, sectionTitle: section.title }))}
                   </div>
                 )}
